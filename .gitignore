@@ -106,3 +106,6 @@ pnpm-lock.yaml
 # Backup files
 *.backup
 *.bak
+
+# MCP configuration files with sensitive data
+.mcp.json

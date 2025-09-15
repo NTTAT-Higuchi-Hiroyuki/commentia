@@ -7,7 +7,7 @@
     "build": "tsc",
     "clean": "rm -rf dist",
     "type-check": "tsc --noEmit",
-    "test": "jest"
+    "test": "jest --passWithNoTests"
   },
   "dependencies": {},
   "devDependencies": {

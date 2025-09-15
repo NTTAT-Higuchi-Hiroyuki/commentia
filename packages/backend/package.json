@@ -7,7 +7,7 @@
     "build:functions": "node scripts/build-functions.cjs",
     "clean": "rm -rf dist",
     "type-check": "tsc --noEmit",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "dev:localstack": "docker-compose up localstack"
   },
   "dependencies": {

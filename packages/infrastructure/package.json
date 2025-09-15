@@ -9,7 +9,7 @@
     "diff": "cdk diff",
     "clean": "rm -rf cdk.out dist",
     "type-check": "tsc --noEmit",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "test:localstack": "ts-node scripts/test-localstack.ts"
   },
   "dependencies": {

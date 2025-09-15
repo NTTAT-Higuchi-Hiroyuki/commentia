@@ -1,0 +1,71 @@
+{
+  "mcpServers": {
+    "github": {
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "$GITHUB_TOKEN"
+      }
+    },
+    "awslabs.core-mcp-server": {
+      "command": "uvx",
+      "args": ["awslabs.core-mcp-server@latest"],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      }
+    },
+    "awslabs.cdk-mcp-server": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["awslabs.cdk-mcp-server@latest"],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      }
+    },
+    "awslabs.aws-documentation-mcp-server": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["awslabs.aws-documentation-mcp-server@latest"],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "ERROR"
+      }
+    },
+    "playwright": {
+      "command": "npx",
+      "args": ["@playwright/mcp@latest"]
+    },
+    "ppt": {
+      "command": "uvx",
+      "args": ["--from", "office-powerpoint-mcp-server", "ppt_mcp_server"],
+      "env": {}
+    },
+    "excel": {
+      "command": "npx",
+      "args": ["--yes", "@negokaz/excel-mcp-server"],
+      "env": {
+        "EXCEL_MCP_PAGING_CELLS_LIMIT": "10000"
+      }
+    },
+    "context7": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"],
+      "env": {}
+    },
+    "serena": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "--from",
+        "git+https://github.com/oraios/serena",
+        "serena",
+        "start-mcp-server",
+        "--context",
+        "ide-assistant",
+        "--project",
+        "/Users/higu/Project/commentia"
+      ],
+      "env": {}
+    }
+  }
+}
