@@ -1,20 +1,13 @@
-feat(infrastructure): Task 2.2 - DynamoDBテーブル定義の実装完了
+fix(infrastructure): lintエラーの修正とビルド成果物のクリーンアップ
 
 詳細:
-- Rooms, Comments, Connections, Likesテーブルの定義実装
-- GSI設定の実装（LikeCountIndex, RoomConnectionsIndex, UserLikesIndex）
-- TTL設定の実装（全テーブルで'ttl'属性）
-- DynamoDB Localを使用したテスト環境の構築
-- テーブル作成・検証テストスクリプトの実装
-- 全テーブルとGSI設定の動作確認完了
+- any型を適切な型定義に置き換え（TableProps, GlobalSecondaryIndexProps）
+- forEachループをfor...ofに変更（パフォーマンス改善）
+- トランスパイル済みJSファイルを削除
+- .gitignoreファイルを作成してビルド成果物を除外
+- Biomeのlintルールに完全準拠（エラー0、警告0）
 
-成果物:
-- lib/stacks/database-stack.ts: DynamoDBテーブル定義
-- scripts/test-localstack.ts: テーブル作成・検証スクリプト
-- scripts/setup-dynamodb-local.sh: DynamoDB Local起動スクリプト
-- scripts/stop-dynamodb-local.sh: DynamoDB Local停止スクリプト
-
-関連タスク: #Task2.2
+関連: コード品質改善
 
 🤖 Generated with Claude Code
 
