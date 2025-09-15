@@ -1,0 +1,15 @@
+feat(monorepo): Task 1.1 - モノレポ構造の初期化
+
+詳細:
+- npm workspacesでモノレポ構成を設定
+- packages/frontend, packages/backend, packages/infrastructure, packages/sharedディレクトリを作成
+- 各パッケージのpackage.jsonを初期化し、依存関係を設定
+- TypeScript設定ファイル（tsconfig.json）を配置
+- 共通型定義（@commentia/shared）を実装
+- Reactフロントエンド、Lambda バックエンド、CDK インフラ構成を準備
+
+関連タスク: #Task1.1
+
+🤖 Generated with [Claude Code](https://claude.ai/code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>

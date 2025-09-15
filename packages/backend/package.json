@@ -1,0 +1,31 @@
+{
+  "name": "@commentia/backend",
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "npm run build:functions",
+    "build:functions": "node scripts/build-functions.js",
+    "clean": "rm -rf dist",
+    "type-check": "tsc --noEmit",
+    "test": "jest",
+    "dev:localstack": "docker-compose up localstack"
+  },
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.665.0",
+    "@aws-sdk/client-apigatewaymanagementapi": "^3.665.0",
+    "@aws-sdk/lib-dynamodb": "^3.665.0",
+    "dompurify": "^3.1.7",
+    "qrcode": "^1.5.4",
+    "jsdom": "^25.0.1",
+    "@commentia/shared": "*"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.145",
+    "@types/dompurify": "^3.0.5",
+    "@types/qrcode": "^1.5.5",
+    "@types/jsdom": "^21.1.7",
+    "esbuild": "^0.24.0",
+    "typescript": "^5.7.0",
+    "@types/node": "^22.0.0"
+  }
+}
