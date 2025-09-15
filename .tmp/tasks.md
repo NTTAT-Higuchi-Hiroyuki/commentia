@@ -32,10 +32,10 @@
 
 #### Task 1.3: 共通型定義の作成
 
-- [ ] packages/shared/src/types/配下に型定義ファイル作成
-- [ ] Room, Comment, User, WebSocketMessage型の定義
-- [ ] API Request/Response型の定義
-- [ ] DynamoDB Item型の定義
+- [x] packages/shared/src/types/配下に型定義ファイル作成
+- [x] Room, Comment, User, WebSocketMessage型の定義
+- [x] API Request/Response型の定義
+- [x] DynamoDB Item型の定義
 - **完了条件**: 全ての共通型が定義され、エクスポートされる
 - **依存**: Task 1.1
 - **推定時間**: 3時間
@@ -44,20 +44,20 @@
 
 #### Task 2.1: CDK基盤セットアップ
 
-- [ ] AWS CDK v2プロジェクトの初期化
-- [ ] スタック構成の設計実装（frontend, api, database, websocket）
-- [ ] 環境別設定管理（dev/staging/prod）
-- [ ] CDK構成要素の基本クラス作成
+- [x] AWS CDK v2プロジェクトの初期化
+- [x] スタック構成の設計実装（frontend, api, database, websocket）
+- [x] 環境別設定管理（dev/staging/prod）
+- [x] CDK構成要素の基本クラス作成
 - **完了条件**: cdk synthが成功し、基本構造が生成される
 - **依存**: Task 1.1
 - **推定時間**: 4時間
 
 #### Task 2.2: DynamoDBテーブル定義
 
-- [ ] Rooms, Comments, Connections, Likesテーブル定義
-- [ ] GSI設定（LikeCountIndex, RoomConnectionsIndex, UserLikesIndex）
-- [ ] TTL設定（自動削除機能）
-- [ ] オンデマンドキャパシティ設定
+- [x] Rooms, Comments, Connections, Likesテーブル定義
+- [x] GSI設定（LikeCountIndex, RoomConnectionsIndex, UserLikesIndex）
+- [x] TTL設定（自動削除機能）
+- [x] オンデマンドキャパシティ設定
 - **完了条件**: LocalStackでテーブル作成・操作が可能
 - **依存**: Task 2.1
 - **推定時間**: 3時間

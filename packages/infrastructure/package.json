@@ -9,13 +9,15 @@
     "diff": "cdk diff",
     "clean": "rm -rf cdk.out dist",
     "type-check": "tsc --noEmit",
-    "test": "jest"
+    "test": "jest",
+    "test:localstack": "ts-node scripts/test-localstack.ts"
   },
   "dependencies": {
     "aws-cdk-lib": "^2.161.0",
     "constructs": "^10.3.0",
     "@commentia/shared": "*",
-    "source-map-support": "^0.5.21"
+    "source-map-support": "^0.5.21",
+    "@aws-sdk/client-dynamodb": "^3.658.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
