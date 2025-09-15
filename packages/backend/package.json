@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "npm run build:functions",
-    "build:functions": "node scripts/build-functions.js",
+    "build:functions": "node scripts/build-functions.cjs",
     "clean": "rm -rf dist",
     "type-check": "tsc --noEmit",
     "test": "jest",
