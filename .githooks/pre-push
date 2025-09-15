@@ -10,7 +10,7 @@ url="$2"
 
 # Run full project checks
 echo "🔍 Running full project lint check..."
-if ! npm run lint; then
+if ! npx biome check --write .; then
   echo "❌ Lint check failed. Please fix all issues before pushing."
   exit 1
 fi

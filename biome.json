@@ -115,14 +115,6 @@
       "*.js",
       "*.json"
     ],
-    "ignore": [
-      "node_modules",
-      "dist",
-      "build",
-      "cdk.out",
-      "coverage",
-      ".next",
-      ".vercel"
-    ]
+    "ignore": ["node_modules", "dist", "build", "cdk.out", "coverage", ".next", ".vercel"]
   }
 }

@@ -12,17 +12,8 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true
   },
-  "include": [
-    "lib/**/*",
-    "bin/**/*"
-  ],
-  "exclude": [
-    "dist",
-    "cdk.out",
-    "node_modules",
-    "**/*.test.ts",
-    "**/*.spec.ts"
-  ],
+  "include": ["lib/**/*", "bin/**/*"],
+  "exclude": ["dist", "cdk.out", "node_modules", "**/*.test.ts", "**/*.spec.ts"],
   "references": [
     {
       "path": "../shared"

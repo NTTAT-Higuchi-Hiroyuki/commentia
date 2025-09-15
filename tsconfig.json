@@ -24,10 +24,5 @@
     "resolveJsonModule": true,
     "isolatedModules": true
   },
-  "exclude": [
-    "node_modules",
-    "dist",
-    "build",
-    "cdk.out"
-  ]
+  "exclude": ["node_modules", "dist", "build", "cdk.out"]
 }

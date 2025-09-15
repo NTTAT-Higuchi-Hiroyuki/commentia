@@ -1,14 +1,13 @@
-feat(monorepo): Task 1.1 - モノレポ構造の初期化
+feat(dev-tools): Task 1.2 - 開発環境ツールの設定
 
 詳細:
-- npm workspacesでモノレポ構成を設定
-- packages/frontend, packages/backend, packages/infrastructure, packages/sharedディレクトリを作成
-- 各パッケージのpackage.jsonを初期化し、依存関係を設定
-- TypeScript設定ファイル（tsconfig.json）を配置
-- 共通型定義（@commentia/shared）を実装
-- Reactフロントエンド、Lambda バックエンド、CDK インフラ構成を準備
+- Biome設定ファイル（biome.json）を作成 - TypeScript厳格ルール、自動フォーマット設定
+- Git hooks設定（pre-commit, pre-push）を実装 - 自動リント・フォーマット・テスト実行
+- VSCode設定ファイル配置 - Biome統合、デバッグ設定、タスク設定、拡張機能推奨
+- 環境変数管理（.env.example）を作成 - 全パッケージ対応、開発・本番環境対応
+- .gitignoreファイルを作成 - Node.js、AWS、IDE、ビルド成果物を除外
 
-関連タスク: #Task1.1
+関連タスク: #Task1.2
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 

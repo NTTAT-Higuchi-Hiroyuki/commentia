@@ -30,8 +30,5 @@
     // Testing
     "orta.vscode-jest"
   ],
-  "unwantedRecommendations": [
-    "ms-vscode.vscode-eslint",
-    "esbenp.prettier-vscode"
-  ]
+  "unwantedRecommendations": ["ms-vscode.vscode-eslint", "esbenp.prettier-vscode"]
 }

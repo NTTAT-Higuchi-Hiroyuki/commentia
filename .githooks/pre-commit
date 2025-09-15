@@ -17,9 +17,9 @@ echo "$staged_files"
 
 # Run Biome format check
 echo "🎨 Running Biome format check..."
-if ! npm run format -- --check $staged_files; then
+if ! npx biome format --check $staged_files; then
   echo "❌ Format check failed. Running automatic formatting..."
-  npm run format -- --write $staged_files
+  npx biome format --write $staged_files
 
   # Re-add formatted files
   echo "$staged_files" | xargs git add
@@ -28,7 +28,7 @@ fi
 
 # Run Biome lint check
 echo "🔍 Running Biome lint check..."
-if ! npm run lint -- --apply-unsafe $staged_files; then
+if ! npx biome check --write $staged_files; then
   echo "❌ Lint check failed. Please fix the issues and try again."
   exit 1
 fi

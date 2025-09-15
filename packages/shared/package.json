@@ -9,13 +9,10 @@
     "type-check": "tsc --noEmit",
     "test": "jest"
   },
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
     "typescript": "^5.7.0",
     "@types/node": "^22.0.0"
   },
-  "files": [
-    "dist"
-  ]
+  "files": ["dist"]
 }

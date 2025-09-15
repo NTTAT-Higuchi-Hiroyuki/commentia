@@ -163,17 +163,19 @@ export const CONSTANTS = {
 } as const;
 
 // Utility types
-export type APIResponse<T> = {
-  success: true;
-  data: T;
-} | {
-  success: false;
-  error: {
-    code: string;
-    message: string;
-    details?: unknown;
-  };
-};
+export type APIResponse<T> =
+  | {
+      success: true;
+      data: T;
+    }
+  | {
+      success: false;
+      error: {
+        code: string;
+        message: string;
+        details?: unknown;
+      };
+    };
 
 export type DynamoDBKey = {
   PK: string;
