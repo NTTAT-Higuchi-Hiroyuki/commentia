@@ -22,10 +22,10 @@
 
 #### Task 1.2: 開発環境ツールの設定
 
-- [ ] Biome設定ファイル（biome.json）作成
-- [ ] Git hooks設定（pre-commit, pre-push）
-- [ ] VSCode設定ファイル配置
-- [ ] 環境変数管理（.env.example）
+- [x] Biome設定ファイル（biome.json）作成
+- [x] Git hooks設定（pre-commit, pre-push）
+- [x] VSCode設定ファイル配置
+- [x] 環境変数管理（.env.example）
 - **完了条件**: コードフォーマット・リントが自動実行される
 - **依存**: Task 1.1
 - **推定時間**: 1.5時間

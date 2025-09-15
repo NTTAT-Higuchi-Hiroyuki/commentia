@@ -1,0 +1,37 @@
+{
+  "recommendations": [
+    // Essential for this project
+    "biomejs.biome",
+    "ms-vscode.vscode-typescript-next",
+
+    // React/Frontend development
+    "bradlc.vscode-tailwindcss",
+    "ms-vscode.vscode-json",
+
+    // AWS/Infrastructure
+    "amazonwebservices.aws-toolkit-vscode",
+    "amazonwebservices.codewhisperer-for-command-line-companion",
+
+    // General productivity
+    "ms-vscode.vscode-eslint",
+    "christian-kohler.path-intellisense",
+    "ms-vscode.vscode-npm-script",
+    "formulahendry.auto-rename-tag",
+    "ms-vsliveshare.vsliveshare",
+
+    // Git integration
+    "eamodio.gitlens",
+    "github.vscode-pull-request-github",
+
+    // Documentation
+    "yzhang.markdown-all-in-one",
+    "bierner.markdown-mermaid",
+
+    // Testing
+    "orta.vscode-jest"
+  ],
+  "unwantedRecommendations": [
+    "ms-vscode.vscode-eslint",
+    "esbenp.prettier-vscode"
+  ]
+}

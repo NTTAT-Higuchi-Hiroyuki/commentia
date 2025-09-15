@@ -1,0 +1,46 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Frontend (Chrome)",
+      "type": "chrome",
+      "request": "launch",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/packages/frontend/src",
+      "sourceMaps": true,
+      "trace": "verbose"
+    },
+    {
+      "name": "Debug Node.js Backend",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/packages/backend/src/index.ts",
+      "cwd": "${workspaceFolder}/packages/backend",
+      "runtimeArgs": ["--loader", "ts-node/esm"],
+      "env": {
+        "NODE_ENV": "development"
+      },
+      "sourceMaps": true,
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Run Jest Tests",
+      "type": "node",
+      "request": "launch",
+      "program": "${workspaceFolder}/node_modules/.bin/jest",
+      "args": ["--runInBand", "--detectOpenHandles"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Debug Full Stack",
+      "configurations": [
+        "Debug Frontend (Chrome)",
+        "Debug Node.js Backend"
+      ]
+    }
+  ]
+}

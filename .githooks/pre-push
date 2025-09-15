@@ -1,0 +1,38 @@
+#!/bin/sh
+# Pre-push hook for Commentia project
+# Runs tests and build checks before pushing
+
+echo "🚀 Running pre-push checks..."
+
+# Get the remote and branch being pushed to
+remote="$1"
+url="$2"
+
+# Run full project checks
+echo "🔍 Running full project lint check..."
+if ! npm run lint; then
+  echo "❌ Lint check failed. Please fix all issues before pushing."
+  exit 1
+fi
+
+echo "🔧 Running full TypeScript check..."
+if ! npm run type-check; then
+  echo "❌ TypeScript check failed. Please fix all type errors before pushing."
+  exit 1
+fi
+
+echo "🏗️ Running build check..."
+if ! npm run build; then
+  echo "❌ Build failed. Please fix build errors before pushing."
+  exit 1
+fi
+
+echo "🧪 Running tests..."
+if ! npm run test; then
+  echo "❌ Tests failed. Please fix failing tests before pushing."
+  exit 1
+fi
+
+echo "✅ All pre-push checks passed!"
+echo "🎉 Ready to push to $remote"
+exit 0

@@ -1,0 +1,63 @@
+#!/bin/sh
+# Pre-commit hook for Commentia project
+# Runs Biome formatting and linting before commits
+
+echo "🔍 Running pre-commit checks..."
+
+# Check if staged files include relevant file types
+staged_files=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|js|jsx|json)$' || true)
+
+if [ -z "$staged_files" ]; then
+  echo "✅ No relevant files to check"
+  exit 0
+fi
+
+echo "📝 Checking staged files:"
+echo "$staged_files"
+
+# Run Biome format check
+echo "🎨 Running Biome format check..."
+if ! npm run format -- --check $staged_files; then
+  echo "❌ Format check failed. Running automatic formatting..."
+  npm run format -- --write $staged_files
+
+  # Re-add formatted files
+  echo "$staged_files" | xargs git add
+  echo "✅ Files formatted and re-staged"
+fi
+
+# Run Biome lint check
+echo "🔍 Running Biome lint check..."
+if ! npm run lint -- --apply-unsafe $staged_files; then
+  echo "❌ Lint check failed. Please fix the issues and try again."
+  exit 1
+fi
+
+# Run TypeScript type check for affected packages
+echo "🔧 Running TypeScript checks..."
+affected_packages=""
+
+for file in $staged_files; do
+  if echo "$file" | grep -q "packages/frontend"; then
+    affected_packages="$affected_packages frontend"
+  elif echo "$file" | grep -q "packages/backend"; then
+    affected_packages="$affected_packages backend"
+  elif echo "$file" | grep -q "packages/infrastructure"; then
+    affected_packages="$affected_packages infrastructure"
+  elif echo "$file" | grep -q "packages/shared"; then
+    affected_packages="$affected_packages shared"
+  fi
+done
+
+affected_packages=$(echo "$affected_packages" | tr ' ' '\n' | sort -u | tr '\n' ' ')
+
+for package in $affected_packages; do
+  echo "🔧 Type checking $package..."
+  if ! npm run type-check -w packages/$package; then
+    echo "❌ TypeScript check failed in packages/$package"
+    exit 1
+  fi
+done
+
+echo "✅ All pre-commit checks passed!"
+exit 0
