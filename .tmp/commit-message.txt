@@ -1,14 +1,21 @@
-feat(dev-tools): Task 1.2 - 開発環境ツールの設定
+feat(infrastructure): Task 2.2 - DynamoDBテーブル定義の実装完了
 
 詳細:
-- Biome設定ファイル（biome.json）を作成 - TypeScript厳格ルール、自動フォーマット設定
-- Git hooks設定（pre-commit, pre-push）を実装 - 自動リント・フォーマット・テスト実行
-- VSCode設定ファイル配置 - Biome統合、デバッグ設定、タスク設定、拡張機能推奨
-- 環境変数管理（.env.example）を作成 - 全パッケージ対応、開発・本番環境対応
-- .gitignoreファイルを作成 - Node.js、AWS、IDE、ビルド成果物を除外
+- Rooms, Comments, Connections, Likesテーブルの定義実装
+- GSI設定の実装（LikeCountIndex, RoomConnectionsIndex, UserLikesIndex）
+- TTL設定の実装（全テーブルで'ttl'属性）
+- DynamoDB Localを使用したテスト環境の構築
+- テーブル作成・検証テストスクリプトの実装
+- 全テーブルとGSI設定の動作確認完了
 
-関連タスク: #Task1.2
+成果物:
+- lib/stacks/database-stack.ts: DynamoDBテーブル定義
+- scripts/test-localstack.ts: テーブル作成・検証スクリプト
+- scripts/setup-dynamodb-local.sh: DynamoDB Local起動スクリプト
+- scripts/stop-dynamodb-local.sh: DynamoDB Local停止スクリプト
 
-🤖 Generated with [Claude Code](https://claude.ai/code)
+関連タスク: #Task2.2
+
+🤖 Generated with Claude Code
 
 Co-Authored-By: Claude <noreply@anthropic.com>

@@ -1,0 +1,33 @@
+# Build outputs
+*.js
+*.js.map
+*.d.ts
+!jest.config.js
+!*.config.js
+
+# CDK outputs
+cdk.out
+dist
+
+# Node dependencies
+node_modules
+
+# Environment files
+.env
+.env.local
+
+# IDE
+.vscode
+.idea
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test coverage
+coverage
+*.lcov
+
+# Temp files
+*.tmp
+*.log

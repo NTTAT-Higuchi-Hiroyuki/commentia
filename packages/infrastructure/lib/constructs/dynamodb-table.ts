@@ -25,39 +25,30 @@ export class DynamoDbTable extends Construct {
     super(scope, id);
 
     // DynamoDB Table
-    const tableConfig: any = {
+    const tableConfig: dynamodb.TableProps = {
       tableName: props.tableName,
       partitionKey: props.partitionKey,
       billingMode: dynamodb.BillingMode.PAY_PER_REQUEST,
       removalPolicy: props.stage === 'prod' ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
       pointInTimeRecovery: props.stage === 'prod',
       stream: dynamodb.StreamViewType.NEW_AND_OLD_IMAGES,
+      ...(props.sortKey && { sortKey: props.sortKey }),
+      ...(props.timeToLiveAttribute && { timeToLiveAttribute: props.timeToLiveAttribute }),
     };
-
-    if (props.sortKey) {
-      tableConfig.sortKey = props.sortKey;
-    }
-
-    if (props.timeToLiveAttribute) {
-      tableConfig.timeToLiveAttribute = props.timeToLiveAttribute;
-    }
 
     this.table = new dynamodb.Table(this, 'Table', tableConfig);
 
     // Add Global Secondary Indexes
     if (props.gsiConfigs) {
-      props.gsiConfigs.forEach((gsiConfig) => {
-        const gsiConfig_: any = {
+      for (const gsiConfig of props.gsiConfigs) {
+        const gsiConfig_: dynamodb.GlobalSecondaryIndexProps = {
           indexName: gsiConfig.indexName,
           partitionKey: gsiConfig.partitionKey,
+          ...(gsiConfig.sortKey && { sortKey: gsiConfig.sortKey }),
         };
 
-        if (gsiConfig.sortKey) {
-          gsiConfig_.sortKey = gsiConfig.sortKey;
-        }
-
         this.table.addGlobalSecondaryIndex(gsiConfig_);
-      });
+      }
     }
 
     // CloudWatch Alarms for monitoring
