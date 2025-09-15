@@ -51,7 +51,8 @@ export type WSMessage =
   | { type: 'comment_deleted'; data: { commentId: string } }
   | { type: 'like_updated'; data: { commentId: string; likeCount: number } }
   | { type: 'user_joined'; data: { userName: string; userCount: number } }
-  | { type: 'user_left'; data: { userName: string; userCount: number } };
+  | { type: 'user_left'; data: { userName: string; userCount: number } }
+  | WSErrorMessage;
 
 // API Request/Response types
 export interface CreateRoomRequest {
@@ -183,3 +184,59 @@ export type DynamoDBKey = {
 };
 
 export type SortOrder = 'latest' | 'likes';
+
+// Error types
+export const ERROR_CODES = {
+  // Validation errors (400)
+  INVALID_INPUT: 'INVALID_INPUT',
+  COMMENT_TOO_LONG: 'COMMENT_TOO_LONG',
+  INVALID_ROOM_CODE: 'INVALID_ROOM_CODE',
+  DUPLICATE_USERNAME: 'DUPLICATE_USERNAME',
+
+  // Authorization errors (401)
+  UNAUTHORIZED: 'UNAUTHORIZED',
+  HOST_ONLY_ACTION: 'HOST_ONLY_ACTION',
+
+  // Not found errors (404)
+  ROOM_NOT_FOUND: 'ROOM_NOT_FOUND',
+  COMMENT_NOT_FOUND: 'COMMENT_NOT_FOUND',
+  USER_NOT_FOUND: 'USER_NOT_FOUND',
+
+  // Rate limiting errors (429)
+  RATE_LIMIT_EXCEEDED: 'RATE_LIMIT_EXCEEDED',
+  TOO_MANY_COMMENTS: 'TOO_MANY_COMMENTS',
+  TOO_MANY_LIKES: 'TOO_MANY_LIKES',
+  POST_TOO_FREQUENT: 'POST_TOO_FREQUENT',
+
+  // Server errors (500)
+  INTERNAL_ERROR: 'INTERNAL_ERROR',
+  DATABASE_ERROR: 'DATABASE_ERROR',
+  WEBSOCKET_ERROR: 'WEBSOCKET_ERROR',
+} as const;
+
+export type ErrorCode = (typeof ERROR_CODES)[keyof typeof ERROR_CODES];
+
+export interface APIError {
+  code: ErrorCode;
+  message: string;
+  details?: unknown;
+  timestamp: string;
+}
+
+// WebSocket error messages
+export type WSErrorMessage = {
+  type: 'error';
+  data: APIError;
+};
+
+// Join room request/response for WebSocket
+export interface JoinRoomRequest {
+  roomId: string;
+  userName: string;
+}
+
+export interface JoinRoomResponse {
+  success: boolean;
+  userCount: number;
+  error?: APIError;
+}
