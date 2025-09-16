@@ -124,3 +124,59 @@ export interface Like {
   roomId: string;
   likedAt: string;
 }
+
+// =============================================================================
+// WebSocket Service 関連の型定義
+// =============================================================================
+
+// WebSocket メッセージ型
+export type WSMessage =
+  | { type: 'comment_new'; data: Comment }
+  | { type: 'comment_deleted'; data: { commentId: string } }
+  | { type: 'like_updated'; data: { commentId: string; likeCount: number } }
+  | { type: 'user_joined'; data: { userName: string; userCount: number } }
+  | { type: 'user_left'; data: { userName: string; userCount: number } };
+
+// WebSocket リクエスト型
+export interface JoinRoomRequest {
+  roomId: string;
+  userName: string;
+}
+
+export interface LeaveRoomRequest {
+  roomId: string;
+}
+
+// DynamoDB Connections テーブル アイテム型
+export interface ConnectionItem {
+  PK: string; // "CONN#${connectionId}"
+  SK: string; // "METADATA"
+  GSI1PK: string; // "ROOM#${roomId}"
+  GSI1SK: string; // "CONN#${connectionId}"
+  connectionId: string;
+  roomId: string;
+  userId: string;
+  userName: string;
+  connectedAt: string;
+  ttl: number; // 接続から2時間後に削除
+}
+
+// WebSocket 接続情報型
+export interface Connection {
+  connectionId: string;
+  roomId: string;
+  userId: string;
+  userName: string;
+  connectedAt: string;
+}
+
+// コメント型（共有用）
+export interface Comment {
+  commentId: string;
+  roomId: string;
+  userId: string;
+  userName: string;
+  content: string;
+  timestamp: string;
+  likeCount: number;
+}

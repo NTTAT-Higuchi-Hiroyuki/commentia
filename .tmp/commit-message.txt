@@ -1,17 +1,13 @@
-feat(backend): Task 3.2 - Room Service Lambda実装完了
+feat(backend): Task 3.5 - WebSocket Handler実装完了
 
 詳細:
-- Room Service Lambda handlerの完全実装（room-handler.ts）
-- Room Service クラスの完全実装（room-service.ts）
-- createRoom, getRoom, closeRoom, getRoomByCode関数の実装
-- 6桁ルームコード生成機能の実装
-- API Gateway統合とルーティング設定
-- DynamoDB権限設定とエラーハンドリング
-- TypeScript型チェックとビルド検証完了
-- CDK synthesis成功確認
+- WebSocket接続・切断ハンドラー実装 (connectHandler, disconnectHandler)
+- joinRoom/leaveRoomハンドラー実装 (joinRoomHandler, leaveRoomHandler)
+- ブロードキャスト機能実装 (broadcast, sendToConnection)
+- 接続状態管理実装 (getConnection, getRoomConnections, getRoomUserCount)
+- 包括的エラーハンドリング実装 (WebSocketError, validation)
+- リアルタイム通信用WSMessage型定義の完備
+- DynamoDB Connections テーブルとの統合
+- 複数クライアント対応とメッセージ配信機能
 
-関連タスク: #3.2
-
-🤖 Generated with [Claude Code](https://claude.ai/code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>
+関連タスク: #3.5
