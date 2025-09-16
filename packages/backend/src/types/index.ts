@@ -74,3 +74,53 @@ export interface SuccessResponse<T = unknown> {
 export interface ExtendedContext extends Context {
   environment: LambdaEnvironment;
 }
+
+// =============================================================================
+// Like Service 関連の型定義
+// =============================================================================
+
+// いいね API リクエスト型
+export interface AddLikeRequest {
+  commentId: string;
+  userId: string;
+  roomId: string;
+}
+
+export interface RemoveLikeRequest {
+  commentId: string;
+  userId: string;
+}
+
+// いいね API レスポンス型
+export interface AddLikeResponse {
+  success: true;
+  likeCount: number;
+  message: string;
+}
+
+export interface RemoveLikeResponse {
+  success: true;
+  likeCount: number;
+  message: string;
+}
+
+// DynamoDB アイテム型
+export interface LikeItem {
+  PK: string; // "LIKE#${commentId}"
+  SK: string; // "USER#${userId}"
+  GSI1PK: string; // "USER#${userId}#ROOM#${roomId}"
+  GSI1SK: string; // "LIKE#${likedAt}"
+  commentId: string;
+  userId: string;
+  roomId: string;
+  likedAt: string;
+  ttl: number;
+}
+
+// いいね情報型
+export interface Like {
+  commentId: string;
+  userId: string;
+  roomId: string;
+  likedAt: string;
+}
