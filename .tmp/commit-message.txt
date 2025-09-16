@@ -1,14 +1,17 @@
-fix(infrastructure): lintエラーの修正とビルド成果物のクリーンアップ
+feat(backend): Task 3.2 - Room Service Lambda実装完了
 
 詳細:
-- any型を適切な型定義に置き換え（TableProps, GlobalSecondaryIndexProps）
-- forEachループをfor...ofに変更（パフォーマンス改善）
-- トランスパイル済みJSファイルを削除
-- .gitignoreファイルを作成してビルド成果物を除外
-- Biomeのlintルールに完全準拠（エラー0、警告0）
+- Room Service Lambda handlerの完全実装（room-handler.ts）
+- Room Service クラスの完全実装（room-service.ts）
+- createRoom, getRoom, closeRoom, getRoomByCode関数の実装
+- 6桁ルームコード生成機能の実装
+- API Gateway統合とルーティング設定
+- DynamoDB権限設定とエラーハンドリング
+- TypeScript型チェックとビルド検証完了
+- CDK synthesis成功確認
 
-関連: コード品質改善
+関連タスク: #3.2
 
-🤖 Generated with Claude Code
+🤖 Generated with [Claude Code](https://claude.ai/code)
 
 Co-Authored-By: Claude <noreply@anthropic.com>

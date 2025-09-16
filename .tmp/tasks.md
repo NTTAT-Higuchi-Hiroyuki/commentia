@@ -64,19 +64,19 @@
 
 #### Task 2.3: API Gateway設定
 
-- [ ] REST APIゲートウェイの設定
-- [ ] CORS設定
-- [ ] レート制限・スロットリング設定
-- [ ] エラーレスポンス設定
+- [x] REST APIゲートウェイの設定
+- [x] CORS設定
+- [x] レート制限・スロットリング設定
+- [x] エラーレスポンス設定
 - **完了条件**: API Gatewayエンドポイントにアクセス可能
 - **依存**: Task 2.1
 - **推定時間**: 2時間
 
 #### Task 2.4: WebSocket API設定
 
-- [ ] WebSocket APIゲートウェイの設定
-- [ ] $connect, $disconnect, joinRoom, leaveRoomルート設定
-- [ ] 接続管理の設定
+- [x] WebSocket APIゲートウェイの設定
+- [x] $connect, $disconnect, joinRoom, leaveRoomルート設定
+- [x] 接続管理の設定
 - **完了条件**: WebSocket接続・切断が正常に動作
 - **依存**: Task 2.1, Task 2.2
 - **推定時間**: 3時間
@@ -85,21 +85,29 @@
 
 #### Task 3.1: Lambda関数基盤の実装
 
-- [ ] Lambda関数共通設定（esbuild, ハンドラー構造）
-- [ ] AWS SDK v3 クライアント設定
-- [ ] エラーハンドリング共通関数
-- [ ] ログ出力設定（構造化JSON）
+- [x] Lambda関数共通設定（esbuild, ハンドラー構造）
+- [x] AWS SDK v3 クライアント設定
+- [x] エラーハンドリング共通関数
+- [x] ログ出力設定（構造化JSON）
 - **完了条件**: Hello World Lambda関数がデプロイ・実行可能
 - **依存**: Task 2.1
 - **推定時間**: 2時間
+- **実装内容**:
+  - `/packages/backend/src/` 配下にディレクトリ構造作成
+  - 型定義ファイル（`types/index.ts`）実装
+  - AWS SDK v3クライアント設定（`config/aws-clients.ts`）
+  - 構造化ログ機能（`utils/logger.ts`）実装
+  - 包括的エラーハンドリング（`utils/error-handler.ts`）実装
+  - Lambdaコンストラクト（`lib/constructs/lambda-function.ts`）更新
+  - ビルド・型チェック・CDK synthテスト完了
 
 #### Task 3.2: Room Service Lambda実装
 
-- [ ] createRoom関数実装（ルーム作成）
-- [ ] getRoom関数実装（ルーム情報取得）
-- [ ] closeRoom関数実装（ルーム終了）
-- [ ] generateRoomCode関数実装（6桁コード生成）
-- [ ] roomCode検索機能実装
+- [x] createRoom関数実装（ルーム作成）
+- [x] getRoom関数実装（ルーム情報取得）
+- [x] closeRoom関数実装（ルーム終了）
+- [x] generateRoomCode関数実装（6桁コード生成）
+- [x] roomCode検索機能実装
 - **完了条件**: 全てのRoom API が動作し、LocalStackでテスト成功
 - **依存**: Task 3.1, Task 2.2
 - **推定時間**: 6時間

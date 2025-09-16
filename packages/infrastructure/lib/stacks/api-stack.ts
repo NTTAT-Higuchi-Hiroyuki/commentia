@@ -93,8 +93,23 @@ export class ApiStack extends cdk.Stack {
     // DynamoDBテーブルへのアクセス権限を付与
     props.tablesConfig.roomsTable.grantReadWriteData(roomService.function);
 
+    // Comment Service Lambda Function
+    const commentService = new LambdaFunction(this, 'CommentService', {
+      functionName: `commentia-comment-service-${props.stage}`,
+      description: `Commentia Comment Service Lambda - ${props.stage}`,
+      entry: '../backend/src/handlers/comment-handler.ts',
+      handler: 'handler',
+      stage: props.stage,
+      environment: lambdaEnvironment,
+    });
+
+    // DynamoDBテーブルへのアクセス権限を付与
+    props.tablesConfig.commentsTable.grantReadWriteData(commentService.function);
+    props.tablesConfig.roomsTable.grantReadData(commentService.function); // ルーム設定取得用
+
     // API ルートの設定
     this.setupRoomApiRoutes(roomService);
+    this.setupCommentApiRoutes(commentService);
 
     // Gateway Responses for better error handling
     this.setupGatewayResponses();
@@ -310,6 +325,58 @@ export class ApiStack extends cdk.Stack {
   }
 
   /**
+   * Comment Service用APIルートの設定
+   */
+  private setupCommentApiRoutes(commentService: LambdaFunction): void {
+    // 既存の /rooms/{roomId} リソースを取得
+    const roomsResource = this.api.root.getResource('rooms');
+    if (!roomsResource) {
+      throw new Error('Rooms resource not found. Room API routes must be set up first.');
+    }
+
+    const roomResource = roomsResource.getResource('{roomId}');
+    if (!roomResource) {
+      throw new Error('Room resource not found. Room API routes must be set up first.');
+    }
+
+    // POST /rooms/{roomId}/comments - コメント投稿
+    // GET /rooms/{roomId}/comments - コメント一覧取得
+    const commentsResource = roomResource.addResource('comments');
+
+    commentsResource.addMethod('POST', new apigateway.LambdaIntegration(commentService.function), {
+      requestValidator: this.requestValidator,
+      requestModels: {
+        'application/json': this.createCommentRequestModel(),
+      },
+      requestParameters: {
+        'method.request.path.roomId': true,
+      },
+    });
+
+    commentsResource.addMethod('GET', new apigateway.LambdaIntegration(commentService.function), {
+      requestValidator: this.requestValidator,
+      requestParameters: {
+        'method.request.path.roomId': true,
+        'method.request.querystring.sortBy': false,
+        'method.request.querystring.limit': false,
+        'method.request.querystring.cursor': false,
+      },
+    });
+
+    // /comments/{commentId} リソース
+    const commentsRootResource = this.api.root.addResource('comments');
+    const commentResource = commentsRootResource.addResource('{commentId}');
+
+    // DELETE /comments/{commentId} - コメント削除
+    commentResource.addMethod('DELETE', new apigateway.LambdaIntegration(commentService.function), {
+      requestValidator: this.requestValidator,
+      requestParameters: {
+        'method.request.path.commentId': true,
+      },
+    });
+  }
+
+  /**
    * Room Request Modelの作成
    */
   private createRoomRequestModel(): apigateway.Model {
@@ -343,6 +410,26 @@ export class ApiStack extends cdk.Stack {
           },
         },
         required: ['hostId'],
+      },
+    });
+  }
+
+  /**
+   * Comment Request Modelの作成
+   */
+  private createCommentRequestModel(): apigateway.Model {
+    return new apigateway.Model(this, 'CommentRequestModel', {
+      restApi: this.api as apigateway.IRestApi,
+      modelName: 'CommentRequest',
+      contentType: 'application/json',
+      schema: {
+        type: apigateway.JsonSchemaType.OBJECT,
+        properties: {
+          userId: { type: apigateway.JsonSchemaType.STRING },
+          userName: { type: apigateway.JsonSchemaType.STRING, minLength: 1, maxLength: 50 },
+          content: { type: apigateway.JsonSchemaType.STRING, minLength: 1, maxLength: 500 },
+        },
+        required: ['userId', 'userName', 'content'],
       },
     });
   }
