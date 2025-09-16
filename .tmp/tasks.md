@@ -114,11 +114,11 @@
 
 #### Task 3.3: Comment Service Lambda実装
 
-- [ ] postComment関数実装（コメント投稿）
-- [ ] getComments関数実装（コメント一覧取得、ソート対応）
-- [ ] deleteComment関数実装（コメント削除）
-- [ ] バリデーション機能（文字数制限、XSS対策）
-- [ ] 投稿制限機能（連続投稿、最大数制限）
+- [x] postComment関数実装（コメント投稿）
+- [x] getComments関数実装（コメント一覧取得、ソート対応）
+- [x] deleteComment関数実装（コメント削除）
+- [x] バリデーション機能（文字数制限、XSS対策）
+- [x] 投稿制限機能（連続投稿、最大数制限）
 - **完了条件**: Comment API が全て動作し、リアルタイム配信が可能
 - **依存**: Task 3.1, Task 2.2, Task 2.4
 - **推定時間**: 8時間
