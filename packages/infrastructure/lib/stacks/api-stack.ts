@@ -1,8 +1,8 @@
 import * as cdk from 'aws-cdk-lib';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import type { Construct } from 'constructs';
+import { LambdaFunction } from '../constructs/lambda-function';
 import type { TablesConfig } from './database-stack';
-// import { LambdaFunction } from '../constructs/lambda-function';
 
 export interface ApiStackProps extends cdk.StackProps {
   stage: 'dev' | 'staging' | 'prod';
@@ -70,18 +70,31 @@ export class ApiStack extends cdk.Stack {
       validateRequestParameters: true,
     });
 
-    // Lambda環境変数 (will be used in Task 3.1)
-    // const lambdaEnvironment = {
-    //   STAGE: props.stage,
-    //   REGION: this.region,
-    //   ROOMS_TABLE_NAME: props.tablesConfig.roomsTable.tableName,
-    //   COMMENTS_TABLE_NAME: props.tablesConfig.commentsTable.tableName,
-    //   CONNECTIONS_TABLE_NAME: props.tablesConfig.connectionsTable.tableName,
-    //   LIKES_TABLE_NAME: props.tablesConfig.likesTable.tableName,
-    // };
+    // Lambda環境変数
+    const lambdaEnvironment = {
+      STAGE: props.stage,
+      REGION: this.region,
+      ROOMS_TABLE_NAME: props.tablesConfig.roomsTable.tableName,
+      COMMENTS_TABLE_NAME: props.tablesConfig.commentsTable.tableName,
+      CONNECTIONS_TABLE_NAME: props.tablesConfig.connectionsTable.tableName,
+      LIKES_TABLE_NAME: props.tablesConfig.likesTable.tableName,
+    };
 
-    // Lambda functions will be created in Task 3.1
-    // setupApiRoutes will be called from there
+    // Room Service Lambda Function
+    const roomService = new LambdaFunction(this, 'RoomService', {
+      functionName: `commentia-room-service-${props.stage}`,
+      description: `Commentia Room Service Lambda - ${props.stage}`,
+      entry: '../backend/src/handlers/room-handler.ts',
+      handler: 'handler',
+      stage: props.stage,
+      environment: lambdaEnvironment,
+    });
+
+    // DynamoDBテーブルへのアクセス権限を付与
+    props.tablesConfig.roomsTable.grantReadWriteData(roomService.function);
+
+    // API ルートの設定
+    this.setupRoomApiRoutes(roomService);
 
     // Gateway Responses for better error handling
     this.setupGatewayResponses();
@@ -251,151 +264,86 @@ export class ApiStack extends cdk.Stack {
     return this.requestValidator;
   }
 
-  // API routes will be configured in Task 3.1
-  // public setupApiRoutes(
-  //   roomService: LambdaFunction,
-  //   commentService: LambdaFunction,
-  //   likeService: LambdaFunction,
-  //   qrService: LambdaFunction,
-  // ): void {
-  //   // /rooms リソース
-  //   const roomsResource = this.api.root.addResource('rooms');
+  /**
+   * Room Service用APIルートの設定
+   */
+  private setupRoomApiRoutes(roomService: LambdaFunction): void {
+    // /rooms リソース
+    const roomsResource = this.api.root.addResource('rooms');
 
-  //   // POST /rooms - ルーム作成
-  //   roomsResource.addMethod('POST', new apigateway.LambdaIntegration(roomService.function), {
-  //     requestValidator: this.requestValidator,
-  //     requestModels: {
-  //       'application/json': this.createRoomRequestModel(),
-  //     },
-  //   });
+    // POST /rooms - ルーム作成
+    roomsResource.addMethod('POST', new apigateway.LambdaIntegration(roomService.function), {
+      requestValidator: this.requestValidator,
+      requestModels: {
+        'application/json': this.createRoomRequestModel(),
+      },
+    });
 
-  //   // /rooms/{roomId} リソース
-  //   const roomResource = roomsResource.addResource('{roomId}');
+    // /rooms/{roomId} リソース
+    const roomResource = roomsResource.addResource('{roomId}');
 
-  //   // GET /rooms/{roomId} - ルーム情報取得
-  //   roomResource.addMethod('GET', new apigateway.LambdaIntegration(roomService.function), {
-  //     requestValidator: this.requestValidator,
-  //     requestParameters: {
-  //       'method.request.path.roomId': true,
-  //     },
-  //   });
+    // GET /rooms/{roomId} - ルーム情報取得
+    roomResource.addMethod('GET', new apigateway.LambdaIntegration(roomService.function), {
+      requestValidator: this.requestValidator,
+      requestParameters: {
+        'method.request.path.roomId': true,
+      },
+    });
 
-  //   // DELETE /rooms/{roomId} - ルーム終了
-  //   roomResource.addMethod('DELETE', new apigateway.LambdaIntegration(roomService.function), {
-  //     requestValidator: this.requestValidator,
-  //     requestParameters: {
-  //       'method.request.path.roomId': true,
-  //     },
-  //   });
+    // DELETE /rooms/{roomId} - ルーム終了
+    roomResource.addMethod('DELETE', new apigateway.LambdaIntegration(roomService.function), {
+      requestValidator: this.requestValidator,
+      requestParameters: {
+        'method.request.path.roomId': true,
+      },
+    });
 
-  //   // GET /rooms/{roomId}/qr - QRコード取得
-  //   const qrResource = roomResource.addResource('qr');
-  //   qrResource.addMethod('GET', new apigateway.LambdaIntegration(qrService.function), {
-  //     requestValidator: this.requestValidator,
-  //     requestParameters: {
-  //       'method.request.path.roomId': true,
-  //     },
-  //   });
+    // /rooms/code/{roomCode} - ルームコード検索
+    const codeResource = roomsResource.addResource('code');
+    const roomCodeResource = codeResource.addResource('{roomCode}');
+    roomCodeResource.addMethod('GET', new apigateway.LambdaIntegration(roomService.function), {
+      requestValidator: this.requestValidator,
+      requestParameters: {
+        'method.request.path.roomCode': true,
+      },
+    });
+  }
 
-  //   // POST /rooms/{roomId}/comments - コメント投稿
-  //   // GET /rooms/{roomId}/comments - コメント一覧取得
-  //   const commentsResource = roomResource.addResource('comments');
-  //   commentsResource.addMethod('POST', new apigateway.LambdaIntegration(commentService.function), {
-  //     requestValidator: this.requestValidator,
-  //     requestModels: {
-  //       'application/json': this.createCommentRequestModel(),
-  //     },
-  //     requestParameters: {
-  //       'method.request.path.roomId': true,
-  //     },
-  //   });
-  //   commentsResource.addMethod('GET', new apigateway.LambdaIntegration(commentService.function), {
-  //     requestValidator: this.requestValidator,
-  //     requestParameters: {
-  //       'method.request.path.roomId': true,
-  //       'method.request.querystring.sortBy': false,
-  //       'method.request.querystring.limit': false,
-  //       'method.request.querystring.lastEvaluatedKey': false,
-  //     },
-  //   });
-
-  //   // /rooms/code/{roomCode} - ルームコード検索
-  //   const codeResource = roomsResource.addResource('code');
-  //   const roomCodeResource = codeResource.addResource('{roomCode}');
-  //   roomCodeResource.addMethod('GET', new apigateway.LambdaIntegration(roomService.function), {
-  //     requestValidator: this.requestValidator,
-  //     requestParameters: {
-  //       'method.request.path.roomCode': true,
-  //     },
-  //   });
-
-  //   // /comments/{commentId} リソース
-  //   const commentsRootResource = this.api.root.addResource('comments');
-  //   const commentResource = commentsRootResource.addResource('{commentId}');
-
-  //   // DELETE /comments/{commentId} - コメント削除
-  //   commentResource.addMethod('DELETE', new apigateway.LambdaIntegration(commentService.function), {
-  //     requestValidator: this.requestValidator,
-  //     requestParameters: {
-  //       'method.request.path.commentId': true,
-  //     },
-  //   });
-
-  //   // POST /comments/{commentId}/likes - いいね追加
-  //   // DELETE /comments/{commentId}/likes - いいね取消
-  //   const likesResource = commentResource.addResource('likes');
-  //   likesResource.addMethod('POST', new apigateway.LambdaIntegration(likeService.function), {
-  //     requestValidator: this.requestValidator,
-  //     requestParameters: {
-  //       'method.request.path.commentId': true,
-  //     },
-  //   });
-  //   likesResource.addMethod('DELETE', new apigateway.LambdaIntegration(likeService.function), {
-  //     requestValidator: this.requestValidator,
-  //     requestParameters: {
-  //       'method.request.path.commentId': true,
-  //     },
-  //   });
-  // }
-
-  // Request Models for validation (will be used in Task 3.1)
-  // private createRoomRequestModel(): apigateway.Model {
-  //   return new apigateway.Model(this, 'RoomRequestModel', {
-  //     restApi: this.api,
-  //     modelName: 'RoomRequest',
-  //     contentType: 'application/json',
-  //     schema: {
-  //       type: apigateway.JsonSchemaType.OBJECT,
-  //       properties: {
-  //         hostId: { type: apigateway.JsonSchemaType.STRING },
-  //         settings: {
-  //           type: apigateway.JsonSchemaType.OBJECT,
-  //           properties: {
-  //             maxCommentsPerUser: { type: apigateway.JsonSchemaType.INTEGER, minimum: 1, maximum: 100 },
-  //             maxLikesPerUser: { type: apigateway.JsonSchemaType.INTEGER, minimum: 1, maximum: 1000 },
-  //             commentMaxLength: { type: apigateway.JsonSchemaType.INTEGER, minimum: 1, maximum: 500 },
-  //           },
-  //         },
-  //       },
-  //       required: ['hostId'],
-  //     },
-  //   });
-  // }
-
-  // private createCommentRequestModel(): apigateway.Model {
-  //   return new apigateway.Model(this, 'CommentRequestModel', {
-  //     restApi: this.api,
-  //     modelName: 'CommentRequest',
-  //     contentType: 'application/json',
-  //     schema: {
-  //       type: apigateway.JsonSchemaType.OBJECT,
-  //       properties: {
-  //         userId: { type: apigateway.JsonSchemaType.STRING },
-  //         userName: { type: apigateway.JsonSchemaType.STRING, minLength: 1, maxLength: 50 },
-  //         content: { type: apigateway.JsonSchemaType.STRING, minLength: 1, maxLength: 500 },
-  //       },
-  //       required: ['userId', 'userName', 'content'],
-  //     },
-  //   });
-  // }
+  /**
+   * Room Request Modelの作成
+   */
+  private createRoomRequestModel(): apigateway.Model {
+    return new apigateway.Model(this, 'RoomRequestModel', {
+      restApi: this.api as apigateway.IRestApi,
+      modelName: 'RoomRequest',
+      contentType: 'application/json',
+      schema: {
+        type: apigateway.JsonSchemaType.OBJECT,
+        properties: {
+          hostId: { type: apigateway.JsonSchemaType.STRING },
+          settings: {
+            type: apigateway.JsonSchemaType.OBJECT,
+            properties: {
+              maxCommentsPerUser: {
+                type: apigateway.JsonSchemaType.INTEGER,
+                minimum: 1,
+                maximum: 100,
+              },
+              maxLikesPerUser: {
+                type: apigateway.JsonSchemaType.INTEGER,
+                minimum: 1,
+                maximum: 1000,
+              },
+              commentMaxLength: {
+                type: apigateway.JsonSchemaType.INTEGER,
+                minimum: 1,
+                maximum: 500,
+              },
+            },
+          },
+        },
+        required: ['hostId'],
+      },
+    });
+  }
 }
