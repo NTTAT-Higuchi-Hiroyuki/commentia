@@ -1,4 +1,5 @@
 import { useCommentsStore } from '@/store/commentsStore';
+import { useParticipantsStore } from '@/store/participantsStore';
 import { useRoomStore } from '@/store/roomStore';
 import { useUserStore } from '@/store/userStore';
 import { useWebSocketStore } from '@/store/websocketStore';
@@ -98,6 +99,7 @@ export class WebSocketManager {
 
     const wsStore = useWebSocketStore.getState();
     const commentsStore = useCommentsStore.getState();
+    const participantsStore = useParticipantsStore.getState();
     const roomStore = useRoomStore.getState();
     const userStore = useUserStore.getState();
 
@@ -123,6 +125,21 @@ export class WebSocketManager {
       case 'user_joined': {
         const data = message.data as UserJoinedMessage['data'];
         wsStore.setUserCount(data.userCount);
+        participantsStore.syncTotalCount(data.userCount);
+
+        // 参加者を追加（詳細情報があれば）
+        if ('userId' in data && 'userName' in data) {
+          participantsStore.addParticipant({
+            userId: data.userId as string,
+            userName: data.userName,
+          });
+        } else {
+          // 詳細情報がない場合は、ユーザー名のみで追加
+          participantsStore.addParticipant({
+            userId: `unknown_${Date.now()}`,
+            userName: data.userName,
+          });
+        }
 
         // ルーム内ユーザー情報を更新（必要に応じて）
         if (roomStore.currentRoom) {
@@ -138,6 +155,18 @@ export class WebSocketManager {
       case 'user_left': {
         const data = message.data as UserLeftMessage['data'];
         wsStore.setUserCount(data.userCount);
+        participantsStore.syncTotalCount(data.userCount);
+
+        // 参加者を削除（詳細情報があれば）
+        if ('userId' in data) {
+          participantsStore.removeParticipant(data.userId as string);
+        } else {
+          // userIdがない場合は、userNameで検索して削除
+          const participant = participantsStore.findParticipantByUserName(data.userName);
+          if (participant) {
+            participantsStore.removeParticipant(participant.userId);
+          }
+        }
 
         // ルーム内ユーザー情報を更新
         if (roomStore.currentRoom) {

@@ -23,3 +23,7 @@ export { CommentForm } from './CommentForm';
 export { CommentItem } from './CommentItem';
 export { CommentList } from './CommentList';
 export { CommentSection } from './CommentSection';
+
+// Participant Management Components
+export { ParticipantList } from './ParticipantList';
+export { ConnectionStatus } from './ConnectionStatus';

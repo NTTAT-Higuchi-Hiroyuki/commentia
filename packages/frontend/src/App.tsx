@@ -3,6 +3,7 @@ import { Layout } from './components/Layout';
 import { CreateRoomPage } from './pages/CreateRoomPage';
 import { HomePage } from './pages/HomePage';
 import { JoinRoomPage } from './pages/JoinRoomPage';
+import { RoomPage } from './pages/RoomPage';
 
 function App() {
   return (
@@ -12,10 +13,8 @@ function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/create-room" element={<CreateRoomPage />} />
           <Route path="/join-room" element={<JoinRoomPage />} />
-          {/* 将来追加されるルート
-          <Route path="/rooms/:roomId" element={<RoomPage />} />
-          <Route path="*" element={<NotFoundPage />} />
-          */}
+          <Route path="/join-room/:roomId" element={<JoinRoomPage />} />
+          <Route path="/room/:roomId" element={<RoomPage />} />
         </Routes>
       </Layout>
     </Router>
