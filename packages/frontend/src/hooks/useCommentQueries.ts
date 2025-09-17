@@ -1,12 +1,7 @@
 import { CommentService } from '@/services/commentService';
 import { useCommentsStore } from '@/store/commentsStore';
 import { useUserStore } from '@/store/userStore';
-import type {
-  CreateCommentRequest,
-  GetCommentsRequest,
-  GetCommentsResponse,
-  SortOrder,
-} from '@commentia/shared';
+import type { GetCommentsResponse, SortOrder } from '@commentia/shared';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
@@ -18,7 +13,7 @@ export const useComments = (roomId: string | null, sortBy: SortOrder = 'latest')
     queryKey: ['comments', roomId, sortBy],
     queryFn: () =>
       CommentService.getComments({
-        roomId: roomId!,
+        roomId: roomId ?? '',
         sortBy,
         limit: 20,
       }),
@@ -28,7 +23,7 @@ export const useComments = (roomId: string | null, sortBy: SortOrder = 'latest')
   useEffect(() => {
     if (query.data) {
       setComments(query.data.comments);
-      setPagination(query.data.hasMore, query.data.nextCursor);
+      setPagination(query.data.hasMore, query.data.nextCursor ?? null);
       setError(null);
     }
   }, [query.data, setComments, setPagination, setError]);
@@ -41,7 +36,7 @@ export const useComments = (roomId: string | null, sortBy: SortOrder = 'latest')
 
   useEffect(() => {
     setLoading(false);
-  }, [query.isFetched, setLoading]);
+  }, [setLoading]);
 
   return query;
 };
@@ -55,14 +50,14 @@ export const useLoadMoreComments = (roomId: string | null, sortBy: SortOrder = '
   return useMutation({
     mutationFn: () =>
       CommentService.getComments({
-        roomId: roomId!,
+        roomId: roomId ?? '',
         sortBy,
-        cursor: nextCursor,
+        ...(nextCursor ? { cursor: nextCursor } : {}),
         limit: 20,
       }),
     onSuccess: (response) => {
       appendComments(response.comments);
-      setPagination(response.hasMore, response.nextCursor);
+      setPagination(response.hasMore, response.nextCursor ?? null);
       // キャッシュを更新
       queryClient.setQueryData(
         ['comments', roomId, sortBy],
@@ -136,7 +131,7 @@ export const useDeleteComment = () => {
         queryKey: ['comments'],
       });
     },
-    onError: (error, commentId) => {
+    onError: (error, _commentId) => {
       setDeleting(null);
       setError(error instanceof Error ? error.message : 'コメントの削除に失敗しました');
     },

@@ -55,26 +55,26 @@ export {
 } from './websocketStore';
 
 // Combined hooks for common use cases
-export const useAppState = () => ({
-  room: useCurrentRoom(),
-  user: useCurrentUser(),
-  isAuthenticated: useIsAuthenticated(),
-  isConnected: useIsConnected(),
-  comments: useComments(),
-});
+// export const useAppState = () => ({
+//   room: useCurrentRoom(),
+//   user: useCurrentUser(),
+//   isAuthenticated: useIsAuthenticated(),
+//   isConnected: useIsConnected(),
+//   comments: useComments(),
+// });
 
-export const useLoadingStates = () => ({
-  room: useRoomLoading(),
-  comments: useCommentsLoading(),
-  websocket: useIsConnecting(),
-});
+// export const useLoadingStates = () => ({
+//   room: useRoomLoading(),
+//   comments: useCommentsLoading(),
+//   websocket: useIsConnecting(),
+// });
 
-export const useErrorStates = () => ({
-  room: useRoomError(),
-  comments: useCommentsError(),
-  user: useUserError(),
-  websocket: useWebSocketError(),
-});
+// export const useErrorStates = () => ({
+//   room: useRoomError(),
+//   comments: useCommentsError(),
+//   user: useUserError(),
+//   websocket: useWebSocketError(),
+// });
 
 // Type exports for store states
 export type { RoomState } from './roomStore';

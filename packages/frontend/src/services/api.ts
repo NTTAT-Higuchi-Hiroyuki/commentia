@@ -1,4 +1,4 @@
-import type { APIError, APIResponse } from '@commentia/shared';
+import type { APIError, APIResponse, ErrorCode } from '@commentia/shared';
 import axios, { type AxiosInstance, type AxiosResponse, type AxiosError } from 'axios';
 
 // API設定
@@ -40,7 +40,7 @@ apiClient.interceptors.request.use(
 
 // レスポンスインターセプター（エラーハンドリング）
 apiClient.interceptors.response.use(
-  (response: AxiosResponse<APIResponse>) => {
+  (response: AxiosResponse<APIResponse<unknown>>) => {
     // 成功レスポンスのログ（開発環境のみ）
     if (process.env.NODE_ENV === 'development') {
       console.log(`[API] Response from ${response.config.url}:`, response.data);
@@ -49,17 +49,17 @@ apiClient.interceptors.response.use(
     // APIResponseの形式をチェック
     if (response.data.success) {
       return response;
-    } else {
-      // APIレベルでのエラー
-      const apiError: APIError = {
-        code: response.data.error?.code || 'UNKNOWN_ERROR',
-        message: response.data.error?.message || '不明なエラーが発生しました',
-        details: response.data.error?.details,
-      };
-      throw new APIResponseError(apiError, response.status);
     }
+    // APIレベルでのエラー
+    const apiError: APIError = {
+      code: (response.data.error?.code || 'INTERNAL_ERROR') as ErrorCode,
+      message: response.data.error?.message || '不明なエラーが発生しました',
+      details: response.data.error?.details,
+      timestamp: new Date().toISOString(),
+    };
+    throw new APIResponseError(apiError, response.status);
   },
-  (error: AxiosError<APIResponse>) => {
+  (error: AxiosError<APIResponse<unknown>>) => {
     // ネットワークエラーやHTTPエラーの処理
     if (process.env.NODE_ENV === 'development') {
       console.error('[API] Error:', error);
@@ -69,8 +69,9 @@ apiClient.interceptors.response.use(
     if (error.code === 'ECONNABORTED') {
       throw new APIResponseError(
         {
-          code: 'TIMEOUT_ERROR',
+          code: 'INTERNAL_ERROR' as ErrorCode,
           message: 'リクエストがタイムアウトしました',
+          timestamp: new Date().toISOString(),
         },
         408
       );
@@ -80,8 +81,9 @@ apiClient.interceptors.response.use(
     if (!error.response) {
       throw new APIResponseError(
         {
-          code: 'NETWORK_ERROR',
+          code: 'INTERNAL_ERROR' as ErrorCode,
           message: 'ネットワークに接続できません',
+          timestamp: new Date().toISOString(),
         },
         0
       );
@@ -93,52 +95,65 @@ apiClient.interceptors.response.use(
 
     let apiError: APIError;
 
-    if (responseData?.error) {
+    if (responseData && !responseData.success) {
       // サーバーからのエラーレスポンス
-      apiError = responseData.error;
+      apiError = {
+        code: (responseData.error.code as ErrorCode) || 'INTERNAL_ERROR',
+        message: responseData.error.message,
+        details: responseData.error.details,
+        timestamp:
+          (responseData.error as { timestamp?: string }).timestamp || new Date().toISOString(),
+      };
     } else {
       // HTTPステータスコードからエラーを生成
       switch (status) {
         case 400:
           apiError = {
-            code: 'BAD_REQUEST',
+            code: 'INVALID_INPUT' as ErrorCode,
             message: 'リクエストが無効です',
+            timestamp: new Date().toISOString(),
           };
           break;
         case 401:
           apiError = {
-            code: 'UNAUTHORIZED',
+            code: 'UNAUTHORIZED' as ErrorCode,
             message: '認証が必要です',
+            timestamp: new Date().toISOString(),
           };
           break;
         case 403:
           apiError = {
-            code: 'FORBIDDEN',
+            code: 'UNAUTHORIZED' as ErrorCode,
             message: 'アクセスが拒否されました',
+            timestamp: new Date().toISOString(),
           };
           break;
         case 404:
           apiError = {
-            code: 'NOT_FOUND',
+            code: 'ROOM_NOT_FOUND' as ErrorCode,
             message: 'リソースが見つかりません',
+            timestamp: new Date().toISOString(),
           };
           break;
         case 429:
           apiError = {
-            code: 'RATE_LIMIT_EXCEEDED',
+            code: 'RATE_LIMIT_EXCEEDED' as ErrorCode,
             message: 'リクエスト制限に達しました',
+            timestamp: new Date().toISOString(),
           };
           break;
         case 500:
           apiError = {
-            code: 'INTERNAL_SERVER_ERROR',
+            code: 'INTERNAL_ERROR' as ErrorCode,
             message: 'サーバーエラーが発生しました',
+            timestamp: new Date().toISOString(),
           };
           break;
         default:
           apiError = {
-            code: 'UNKNOWN_ERROR',
+            code: 'INTERNAL_ERROR' as ErrorCode,
             message: `HTTPエラー: ${status}`,
+            timestamp: new Date().toISOString(),
           };
       }
     }
@@ -181,5 +196,8 @@ export const authTokenManager = {
 
 // レスポンスデータ抽出ヘルパー
 export const extractResponseData = <T>(response: AxiosResponse<APIResponse<T>>): T => {
-  return response.data.data;
+  if (response.data.success) {
+    return response.data.data;
+  }
+  throw new Error('Invalid response format');
 };

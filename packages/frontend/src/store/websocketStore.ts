@@ -1,4 +1,4 @@
-import type { JoinRoomRequest, JoinRoomResponse, WSMessage } from '@commentia/shared';
+import type { JoinRoomRequest, WSMessage } from '@commentia/shared';
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 
@@ -198,9 +198,9 @@ export const useWebSocketStore = create<WebSocketState>()(
       }
 
       try {
-        messageQueue.forEach((message) => {
+        for (const message of messageQueue) {
           socket.send(message);
-        });
+        }
         set({ messageQueue: [] });
       } catch (err) {
         console.error('Failed to flush message queue:', err);

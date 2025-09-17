@@ -24,7 +24,7 @@ export const Layout = ({
 }: LayoutProps) => {
   return (
     <div className={`min-h-screen bg-gray-50 flex flex-col ${className}`}>
-      <Header onMenuClick={onMenuClick} showUserInfo={showUserInfo} />
+      <Header {...(onMenuClick ? { onMenuClick } : {})} showUserInfo={showUserInfo} />
 
       <Main fullWidth={fullWidth} noPadding={noPadding}>
         {children}

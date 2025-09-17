@@ -58,9 +58,9 @@ export const useWebSocket = () => {
 
       const request: JoinRoomRequest = {
         roomId,
-        roomCode,
         userId: currentUser.userId,
         userName: currentUser.userName,
+        ...(roomCode ? { roomCode } : {}),
       };
 
       manager.joinRoom(request);

@@ -1,7 +1,7 @@
 import { RoomService } from '@/services/roomService';
 import { useRoomStore } from '@/store/roomStore';
-import { useUserStore } from '@/store/userStore';
-import type { CreateRoomRequest, JoinRoomRequest, Room } from '@commentia/shared';
+// import { useUserStore } from "@/store/userStore";
+// import type { CreateRoomRequest } from "@commentia/shared";
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 
@@ -9,7 +9,6 @@ import { useEffect } from 'react';
 export const useCreateRoom = () => {
   const queryClient = useQueryClient();
   const { setCurrentRoom, setCreatingRoom, setError } = useRoomStore();
-  const _currentUser = useUserStore((state) => state.currentUser);
 
   return useMutation({
     mutationFn: RoomService.createRoom,
@@ -60,7 +59,10 @@ export const useRoom = (roomId: string | null) => {
 
   const query = useQuery({
     queryKey: ['room', roomId],
-    queryFn: () => RoomService.getRoom(roomId!),
+    queryFn: () => {
+      if (!roomId) throw new Error('Room ID is required');
+      return RoomService.getRoom(roomId);
+    },
     enabled: !!roomId,
   });
 

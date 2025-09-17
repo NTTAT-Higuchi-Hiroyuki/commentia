@@ -1,5 +1,6 @@
 import { cn } from '@/lib/utils';
-import React, { type ReactNode, useEffect } from 'react';
+import type React from 'react';
+import { type ReactNode, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
 interface ModalProps {
@@ -68,7 +69,13 @@ export const Modal = ({
                 className="p-1 hover:bg-gray-100 rounded-md transition-colors"
                 aria-label="閉じる"
               >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
