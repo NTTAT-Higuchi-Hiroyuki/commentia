@@ -1,7 +1,10 @@
 import { Button } from '@/components/ui/Button';
 import { useCreateComment } from '@/hooks/useCommentQueries';
 import { useUserStore } from '@/store/userStore';
-import { CONSTANTS } from '@commentia/shared';
+// TODO: Import CONSTANTS from shared package once exported
+const CONSTANTS = {
+  MAX_COMMENT_LENGTH: 500,
+};
 import type React from 'react';
 import type { FormEvent } from 'react';
 import { useState } from 'react';
@@ -67,10 +70,10 @@ export const CommentForm = ({ roomId, disabled = false, className = '' }: Commen
   const remainingChars = maxLength - content.length;
 
   return (
-    <div className={`bg-white border border-gray-200 rounded-lg p-4 ${className}`}>
-      <form onSubmit={handleSubmit} className="space-y-3">
+    <div className={`bg-white border border-gray-200 rounded-lg p-4 md:p-6 ${className}`}>
+      <form onSubmit={handleSubmit} className="space-y-3 md:space-y-4">
         {/* ユーザー情報表示 */}
-        <div className="flex items-center justify-between text-sm text-gray-600">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between text-sm text-gray-600 space-y-1 sm:space-y-0">
           <span>
             投稿者: <span className="font-medium text-gray-900">{currentUser?.userName}</span>
           </span>
@@ -87,7 +90,7 @@ export const CommentForm = ({ roomId, disabled = false, className = '' }: Commen
             onFocus={() => setIsFocused(true)}
             onBlur={() => setIsFocused(false)}
             placeholder="コメントを入力してください..."
-            className={`w-full p-3 border border-gray-200 rounded-md resize-none transition-all ${
+            className={`w-full p-3 md:p-4 border border-gray-200 rounded-md resize-none transition-all text-base touch-manipulation ${
               isFocused ? 'border-blue-500 ring-2 ring-blue-200' : ''
             } ${remainingChars < 0 ? 'border-red-500' : ''}`}
             rows={isFocused ? 4 : 2}
