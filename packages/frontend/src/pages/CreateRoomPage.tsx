@@ -5,7 +5,7 @@ import { useCreateRoom } from '@/hooks/useRoomQueries';
 import { useRoomStore } from '@/store/roomStore';
 import { useUserStore } from '@/store/userStore';
 import type { CreateRoomRequest } from '@commentia/shared';
-import { useEffect, useState, type FormEvent } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 export const CreateRoomPage = () => {
@@ -189,6 +189,8 @@ export const CreateRoomPage = () => {
                   className="w-5 h-5 text-red-400 mr-2 mt-0.5"
                   fill="currentColor"
                   viewBox="0 0 20 20"
+                  aria-label="エラー"
+                  role="img"
                 >
                   <path
                     fillRule="evenodd"

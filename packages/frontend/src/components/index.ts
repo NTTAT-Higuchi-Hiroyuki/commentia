@@ -17,3 +17,9 @@ export type { RoomInfoProps } from './RoomInfo';
 
 export { RoomSettings } from './RoomSettings';
 export type { RoomSettingsProps } from './RoomSettings';
+
+// Comment Components
+export { CommentForm } from './CommentForm';
+export { CommentItem } from './CommentItem';
+export { CommentList } from './CommentList';
+export { CommentSection } from './CommentSection';

@@ -19,3 +19,9 @@ export {
 
 // WebSocket hooks
 export { useWebSocket, useWebSocketCleanup } from './useWebSocket';
+
+// Realtime hooks
+export {
+  useRealtimeComments,
+  useRealtimeCommentsWithFeedback,
+} from './useRealtimeComments';
