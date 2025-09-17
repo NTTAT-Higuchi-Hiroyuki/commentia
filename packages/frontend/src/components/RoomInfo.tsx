@@ -98,7 +98,7 @@ export const RoomInfo = ({ room, userCount = 0, onShowSettings }: RoomInfoProps)
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-gray-900">ルーム情報</h2>
           <div className="flex items-center space-x-2">
-            <div className="w-3 h-3 bg-green-400 rounded-full"></div>
+            <div className="w-3 h-3 bg-green-400 rounded-full" />
             <span className="text-sm text-gray-600">
               {room.status === 'active' ? 'アクティブ' : '閉鎖済み'}
             </span>
@@ -108,13 +108,14 @@ export const RoomInfo = ({ room, userCount = 0, onShowSettings }: RoomInfoProps)
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* ルームコード */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">ルームコード</label>
+            <div className="block text-sm font-medium text-gray-700">ルームコード</div>
             <div className="flex items-center space-x-2">
               <div className="bg-gray-50 border border-gray-200 rounded-md px-3 py-2 font-mono text-lg tracking-widest flex-1 text-center">
                 {room.roomCode}
               </div>
               <Button variant="ghost" size="icon" onClick={handleCopyRoomCode} title="コピー">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <title>コピー</title>
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -128,7 +129,7 @@ export const RoomInfo = ({ room, userCount = 0, onShowSettings }: RoomInfoProps)
 
           {/* 参加者数 */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">参加者数</label>
+            <div className="block text-sm font-medium text-gray-700">参加者数</div>
             <div className="bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-center">
               <span className="text-lg font-semibold text-blue-600">{userCount}</span>
               <span className="text-sm text-gray-600 ml-1">人</span>
@@ -138,13 +139,14 @@ export const RoomInfo = ({ room, userCount = 0, onShowSettings }: RoomInfoProps)
 
         {/* ルームURL */}
         <div className="mt-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">ルームURL</label>
+          <div className="block text-sm font-medium text-gray-700 mb-2">ルームURL</div>
           <div className="flex items-center space-x-2">
             <div className="bg-gray-50 border border-gray-200 rounded-md px-3 py-2 text-sm flex-1 font-mono break-all">
               {roomUrl}
             </div>
             <Button variant="ghost" size="icon" onClick={handleCopyRoomUrl} title="URLをコピー">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <title>URLをコピー</title>
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -167,6 +169,7 @@ export const RoomInfo = ({ room, userCount = 0, onShowSettings }: RoomInfoProps)
           {isHost && onShowSettings && (
             <Button variant="ghost" size="sm" onClick={onShowSettings}>
               <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <title>設定</title>
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -211,6 +214,7 @@ export const RoomInfo = ({ room, userCount = 0, onShowSettings }: RoomInfoProps)
                 fill="currentColor"
                 viewBox="0 0 20 20"
               >
+                <title>エラー</title>
                 <path
                   fillRule="evenodd"
                   d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
@@ -232,6 +236,7 @@ export const RoomInfo = ({ room, userCount = 0, onShowSettings }: RoomInfoProps)
                 loading={closeRoomMutation.isPending}
               >
                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <title>警告</title>
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
@@ -250,6 +255,7 @@ export const RoomInfo = ({ room, userCount = 0, onShowSettings }: RoomInfoProps)
               loading={leaveRoomMutation.isPending}
             >
               <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <title>退出</title>
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
@@ -282,6 +288,7 @@ export const RoomInfo = ({ room, userCount = 0, onShowSettings }: RoomInfoProps)
                   viewBox="0 0 24 24"
                   aria-hidden="true"
                 >
+                  <title>閉じる</title>
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"

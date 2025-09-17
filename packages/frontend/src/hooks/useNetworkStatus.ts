@@ -43,14 +43,13 @@ export const useNetworkStatus = (showNotifications = true) => {
         (navigator as NavigatorWithConnection).connection ||
         (navigator as NavigatorWithConnection).mozConnection ||
         (navigator as NavigatorWithConnection).webkitConnection;
-      const connectionInfo = connection
-        ? {
-            connectionType: connection.type,
-            effectiveType: connection.effectiveType,
-            downlink: connection.downlink,
-            rtt: connection.rtt,
-          }
-        : {};
+      const connectionInfo: Partial<NetworkStatus> = {};
+      if (connection) {
+        if (connection.type) connectionInfo.connectionType = connection.type;
+        if (connection.effectiveType) connectionInfo.effectiveType = connection.effectiveType;
+        if (connection.downlink !== undefined) connectionInfo.downlink = connection.downlink;
+        if (connection.rtt !== undefined) connectionInfo.rtt = connection.rtt;
+      }
 
       setNetworkStatus((prev) => ({
         isOnline: isNowOnline,
@@ -91,7 +90,7 @@ export const useNetworkStatus = (showNotifications = true) => {
       (navigator as NavigatorWithConnection).connection ||
       (navigator as NavigatorWithConnection).mozConnection ||
       (navigator as NavigatorWithConnection).webkitConnection;
-    if (connection) {
+    if (connection?.addEventListener) {
       connection.addEventListener('change', updateNetworkStatus);
     }
 
@@ -101,7 +100,7 @@ export const useNetworkStatus = (showNotifications = true) => {
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      if (connection) {
+      if (connection?.removeEventListener) {
         connection.removeEventListener('change', updateNetworkStatus);
       }
     };

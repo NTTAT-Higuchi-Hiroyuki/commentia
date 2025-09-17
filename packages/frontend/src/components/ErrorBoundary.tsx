@@ -63,6 +63,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
                   stroke="currentColor"
                   aria-label="エラーアイコン"
                 >
+                  <title>エラーアイコン</title>
                   <path
                     strokeLinecap="round"
                     strokeLinejoin="round"
