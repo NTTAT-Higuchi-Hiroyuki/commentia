@@ -1,16 +1,18 @@
-feat(frontend): Task 4.3 - 共通UIコンポーネント実装完了
+feat(frontend): Task 5.2 - コメント投稿・表示機能実装完了
 
 詳細:
-- Button, Input, Modal, Loading コンポーネント実装（高品質UI、バリアント対応）
-- ErrorBoundary コンポーネント実装（包括的エラー処理、再試行機能）
-- Layout コンポーネント実装（Header, Footer, Main - レスポンシブ対応）
-- QRCode表示コンポーネント実装（ダウンロード・コピー機能付き）
-- Tailwind CSS統合によるデザインシステム完成
-- cn() ユーティリティ関数によるクラス名最適化
-- 全コンポーネント統一設計、再利用可能な実装
-- Biomeリントエラー修正（型安全性・アクセシビリティ対応）
+- コメント投稿フォーム実装完了（CommentForm.tsx）
+- コメント一覧表示コンポーネント実装完了（CommentList.tsx）
+- 個別コメント項目コンポーネント実装完了（CommentItem.tsx）
+- コメント統合セクション実装完了（CommentSection.tsx）
+- ソート機能実装完了（新着順・いいね順切り替え）
+- コメント削除機能実装完了（自分のコメントのみ）
+- リアルタイム更新表示実装完了（useRealtimeComments.ts）
+- ブラウザ通知機能実装完了
+- 投稿制限・いいね制限・エラーハンドリング実装完了
+- TypeScript型チェック・ビルド・フォーマット確認済み
 
-関連タスク: #4.3
+関連タスク: #5.2
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
