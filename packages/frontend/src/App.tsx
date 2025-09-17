@@ -1,5 +1,6 @@
 import { Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 import { Layout } from './components/Layout';
+import { ToastContainer } from './components/ui/Toast';
 import { CreateRoomPage } from './pages/CreateRoomPage';
 import { HomePage } from './pages/HomePage';
 import { JoinRoomPage } from './pages/JoinRoomPage';
@@ -17,6 +18,7 @@ function App() {
           <Route path="/room/:roomId" element={<RoomPage />} />
         </Routes>
       </Layout>
+      <ToastContainer />
     </Router>
   );
 }

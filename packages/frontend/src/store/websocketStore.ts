@@ -27,6 +27,8 @@ interface WebSocketState {
   // 設定
   autoReconnect: boolean;
   reconnectInterval: number; // milliseconds
+  baseReconnectInterval: number; // milliseconds
+  maxReconnectInterval: number; // milliseconds
 
   // アクション
   setStatus: (status: ConnectionStatus) => void;
@@ -37,6 +39,7 @@ interface WebSocketState {
   connect: (url: string) => void;
   disconnect: () => void;
   reconnect: () => void;
+  manualReconnect: () => void;
 
   sendMessage: (message: WSMessage) => void;
   queueMessage: (message: string) => void;
@@ -68,6 +71,8 @@ export const useWebSocketStore = create<WebSocketState>()(
     lastError: null,
     autoReconnect: true,
     reconnectInterval: 3000, // 3秒
+    baseReconnectInterval: 1000, // 1秒
+    maxReconnectInterval: 30000, // 30秒
 
     // 基本アクション
     setStatus: (status) => set({ status }),
@@ -145,7 +150,13 @@ export const useWebSocketStore = create<WebSocketState>()(
     },
 
     reconnect: () => {
-      const { url, reconnectAttempts, maxReconnectAttempts } = get();
+      const {
+        url,
+        reconnectAttempts,
+        maxReconnectAttempts,
+        baseReconnectInterval,
+        maxReconnectInterval,
+      } = get();
 
       if (!url || reconnectAttempts >= maxReconnectAttempts) {
         set({
@@ -160,11 +171,49 @@ export const useWebSocketStore = create<WebSocketState>()(
         reconnectAttempts: reconnectAttempts + 1,
       });
 
-      // 再接続間隔を待ってから接続
+      // 指数バックオフで再接続間隔を計算
+      const exponentialDelay = Math.min(
+        baseReconnectInterval * 2 ** reconnectAttempts,
+        maxReconnectInterval
+      );
+
+      // ランダムなジッターを追加 (±25%)
+      const jitter = exponentialDelay * 0.25 * (Math.random() - 0.5);
+      const finalDelay = Math.max(0, exponentialDelay + jitter);
+
+      console.log(
+        `Reconnecting in ${Math.round(finalDelay)}ms (attempt ${reconnectAttempts + 1}/${maxReconnectAttempts})`
+      );
+
       setTimeout(() => {
         const currentState = get();
         currentState.connect(url);
-      }, get().reconnectInterval);
+      }, finalDelay);
+    },
+
+    manualReconnect: () => {
+      const { socket } = get();
+
+      // 現在の接続を切断
+      if (socket) {
+        socket.close();
+      }
+
+      // 再接続試行回数をリセットして自動再接続を有効化
+      set({
+        reconnectAttempts: 0,
+        autoReconnect: true,
+        error: null,
+        status: 'disconnected',
+      });
+
+      // 少し待ってから再接続
+      setTimeout(() => {
+        const { url } = get();
+        if (url) {
+          get().connect(url);
+        }
+      }, 100);
     },
 
     // メッセージ送信
@@ -286,6 +335,9 @@ export const useWebSocketStore = create<WebSocketState>()(
         error: null,
         lastError: null,
         autoReconnect: true,
+        reconnectInterval: 3000,
+        baseReconnectInterval: 1000,
+        maxReconnectInterval: 30000,
       }),
   }))
 );
