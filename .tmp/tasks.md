@@ -147,10 +147,10 @@
 
 #### Task 3.6: QR Service Lambda実装
 
-- [ ] QRコード生成ライブラリ統合
-- [ ] QRコード生成API実装
-- [ ] 画像形式対応（PNG、SVG）
-- [ ] キャッシュ機能実装
+- [x] QRコード生成ライブラリ統合
+- [x] QRコード生成API実装
+- [x] 画像形式対応（PNG、SVG）
+- [x] キャッシュ機能実装
 - **完了条件**: QRコードが正しく生成され、ルーム参加が可能
 - **依存**: Task 3.1
 - **推定時間**: 2時間
@@ -159,30 +159,46 @@
 
 #### Task 4.1: React アプリケーション初期化
 
-- [ ] Vite + React + TypeScript プロジェクト作成
-- [ ] Tailwind CSS設定
-- [ ] 基本レイアウト・ルーティング設定
-- [ ] 環境変数管理設定
+- [x] Vite + React + TypeScript プロジェクト作成
+- [x] Tailwind CSS設定
+- [x] 基本レイアウト・ルーティング設定
+- [x] 環境変数管理設定
 - **完了条件**: React アプリが正常に起動し、基本画面が表示される
 - **依存**: Task 1.1
 - **推定時間**: 3時間
+- **実装内容**:
+  - Vite設定ファイル作成（`vite.config.ts`）
+  - Tailwind CSS設定（`tailwind.config.js`, `postcss.config.js`）
+  - レイアウトコンポーネント実装（`components/Layout.tsx`）
+  - ページコンポーネント実装（`pages/HomePage.tsx`, `pages/CreateRoomPage.tsx`, `pages/JoinRoomPage.tsx`）
+  - React Router設定（`App.tsx`）
+  - 環境変数管理ユーティリティ（`utils/env.ts`）
+  - TypeScript設定更新（Vite型定義追加）
+  - ビルド・型チェック成功確認
 
 #### Task 4.2: 状態管理・API層の実装
 
-- [ ] Zustand ストア設定（room, comments, user, websocket）
-- [ ] TanStack Query設定
-- [ ] API サービスクラス実装（axios設定）
-- [ ] WebSocket接続管理クラス実装
+- [x] Zustand ストア設定（room, comments, user, websocket）
+- [x] TanStack Query設定
+- [x] API サービスクラス実装（axios設定）
+- [x] WebSocket接続管理クラス実装
 - **完了条件**: 状態管理とAPI通信の基盤が動作
 - **依存**: Task 4.1, Task 1.3
 - **推定時間**: 4時間
+- **実装内容**:
+  - Zustandストア4つ実装（room, comments, user, websocket）
+  - TanStack Query設定とプロバイダー実装
+  - axios APIサービスクラス3つ実装（Room, Comment, User）
+  - WebSocketManager シングルトンクラス実装
+  - React用カスタムフック実装（useWebSocket, useRoomQueries, useCommentQueries）
+  - 型安全なAPI通信基盤構築完了
 
 #### Task 4.3: 共通UIコンポーネント実装
 
-- [ ] Button, Input, Modal, Loading コンポーネント
-- [ ] ErrorBoundary コンポーネント
-- [ ] Layout コンポーネント（Header, Main, Footer）
-- [ ] QRCode表示コンポーネント
+- [x] Button, Input, Modal, Loading コンポーネント
+- [x] ErrorBoundary コンポーネント
+- [x] Layout コンポーネント（Header, Main, Footer）
+- [x] QRCode表示コンポーネント
 - **完了条件**: 共通コンポーネントが再利用可能で統一されたデザイン
 - **依存**: Task 4.1
 - **推定時間**: 6時間

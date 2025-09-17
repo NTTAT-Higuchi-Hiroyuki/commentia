@@ -1,21 +1,11 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
+import { StrictMode } from 'react';
+import { createRoot } from 'react-dom/client';
+import App from './App';
 import './index.css';
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <h1>Commentia</h1>
-        <p>Coming soon...</p>
-      </header>
-    </div>
-  );
-}
-
-const root = ReactDOM.createRoot(document.getElementById('root') as HTMLElement);
+const root = createRoot(document.getElementById('root') as HTMLElement);
 root.render(
-  <React.StrictMode>
+  <StrictMode>
     <App />
-  </React.StrictMode>
+  </StrictMode>
 );

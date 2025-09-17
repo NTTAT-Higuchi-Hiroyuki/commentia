@@ -107,9 +107,28 @@ export class ApiStack extends cdk.Stack {
     props.tablesConfig.commentsTable.grantReadWriteData(commentService.function);
     props.tablesConfig.roomsTable.grantReadData(commentService.function); // ルーム設定取得用
 
+    // QR Service Lambda Function
+    const qrService = new LambdaFunction(this, 'QRService', {
+      functionName: `commentia-qr-service-${props.stage}`,
+      description: `Commentia QR Service Lambda - ${props.stage}`,
+      entry: '../backend/src/handlers/qr-handler.ts',
+      handler: 'generateQRCodeHandler',
+      stage: props.stage,
+      environment: {
+        ...lambdaEnvironment,
+        FRONTEND_URL:
+          props.stage === 'prod'
+            ? 'https://commentia.example.com' // TODO: 本番ドメインに置き換え
+            : 'http://localhost:3000', // 開発環境用
+      },
+    });
+
+    // QR Serviceは読み取り専用のため、特別なDynamoDBアクセス権限は不要
+
     // API ルートの設定
     this.setupRoomApiRoutes(roomService);
     this.setupCommentApiRoutes(commentService);
+    this.setupQRApiRoutes(qrService);
 
     // Gateway Responses for better error handling
     this.setupGatewayResponses();
@@ -426,10 +445,45 @@ export class ApiStack extends cdk.Stack {
         type: apigateway.JsonSchemaType.OBJECT,
         properties: {
           userId: { type: apigateway.JsonSchemaType.STRING },
-          userName: { type: apigateway.JsonSchemaType.STRING, minLength: 1, maxLength: 50 },
-          content: { type: apigateway.JsonSchemaType.STRING, minLength: 1, maxLength: 500 },
+          userName: {
+            type: apigateway.JsonSchemaType.STRING,
+            minLength: 1,
+            maxLength: 50,
+          },
+          content: {
+            type: apigateway.JsonSchemaType.STRING,
+            minLength: 1,
+            maxLength: 500,
+          },
         },
         required: ['userId', 'userName', 'content'],
+      },
+    });
+  }
+
+  /**
+   * QR Service用APIルートの設定
+   */
+  private setupQRApiRoutes(qrService: LambdaFunction): void {
+    // 既存の /rooms/{roomId} リソースを取得
+    const roomsResource = this.api.root.getResource('rooms');
+    if (!roomsResource) {
+      throw new Error('Rooms resource not found. Room API routes must be set up first.');
+    }
+
+    const roomResource = roomsResource.getResource('{roomId}');
+    if (!roomResource) {
+      throw new Error('Room resource not found. Room API routes must be set up first.');
+    }
+
+    // GET /rooms/{roomId}/qr - QRコード生成
+    const qrResource = roomResource.addResource('qr');
+    qrResource.addMethod('GET', new apigateway.LambdaIntegration(qrService.function), {
+      requestValidator: this.requestValidator,
+      requestParameters: {
+        'method.request.path.roomId': true,
+        'method.request.querystring.format': false, // png or svg
+        'method.request.querystring.size': false, // 50-500
       },
     });
   }

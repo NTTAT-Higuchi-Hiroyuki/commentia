@@ -48,10 +48,18 @@ export interface Like {
 
 export type WSMessage =
   | { type: 'comment_new'; data: Comment }
+  | { type: 'comment_created'; data: { comment: Comment } }
   | { type: 'comment_deleted'; data: { commentId: string } }
   | { type: 'like_updated'; data: { commentId: string; likeCount: number } }
+  | { type: 'comment_liked'; data: { commentId: string; newLikeCount: number } }
   | { type: 'user_joined'; data: { userName: string; userCount: number } }
   | { type: 'user_left'; data: { userName: string; userCount: number } }
+  | { type: 'room_closed'; data: { roomId: string; reason?: string } }
+  | { type: 'ping'; data: { timestamp: number } }
+  | { type: 'pong'; data: { timestamp: number } }
+  | { type: 'rate_limit'; data: { retryAfter: number } }
+  | { type: 'join_room'; data: JoinRoomRequest }
+  | { type: 'leave_room'; data: Record<string, never> }
   | WSErrorMessage;
 
 // API Request/Response types
@@ -87,7 +95,63 @@ export interface GetCommentsRequest {
 export interface GetCommentsResponse {
   comments: Comment[];
   nextCursor?: string;
+  hasMore: boolean;
 }
+
+// Additional API types
+export interface CreateCommentRequest {
+  roomId: string;
+  userId: string;
+  userName: string;
+  content: string;
+}
+
+export interface LoginRequest {
+  email: string;
+  password: string;
+}
+
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  userName: string;
+}
+
+export interface LoginResponse {
+  user: User;
+  token: string;
+}
+
+// Room interface extension for userCount
+export interface RoomWithUserCount extends Room {
+  userCount: number;
+}
+
+// WebSocket message type aliases for backward compatibility
+export type CommentCreatedMessage = {
+  type: 'comment_created';
+  data: { comment: Comment };
+};
+export type CommentDeletedMessage = {
+  type: 'comment_deleted';
+  data: { commentId: string };
+};
+export type CommentLikedMessage = {
+  type: 'comment_liked';
+  data: { commentId: string; newLikeCount: number };
+};
+export type UserJoinedMessage = {
+  type: 'user_joined';
+  data: { userName: string; userCount: number };
+};
+export type UserLeftMessage = {
+  type: 'user_left';
+  data: { userName: string; userCount: number };
+};
+export type RoomClosedMessage = {
+  type: 'room_closed';
+  data: { roomId: string; reason?: string };
+};
 
 // DynamoDB Item types
 export interface RoomItem {
@@ -232,6 +296,8 @@ export type WSErrorMessage = {
 // Join room request/response for WebSocket
 export interface JoinRoomRequest {
   roomId: string;
+  roomCode?: string;
+  userId: string;
   userName: string;
 }
 
@@ -239,4 +305,18 @@ export interface JoinRoomResponse {
   success: boolean;
   userCount: number;
   error?: APIError;
+}
+
+// QR Service types
+export interface GenerateQRCodeRequest {
+  roomId: string;
+  format?: 'png' | 'svg';
+  size?: number;
+}
+
+export interface GenerateQRCodeResponse {
+  qrCodeData: string; // Base64 encoded image data or SVG string
+  format: 'png' | 'svg';
+  url: string;
+  expiresAt?: string; // Cache expiration
 }
