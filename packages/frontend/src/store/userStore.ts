@@ -23,6 +23,9 @@ interface UserState {
     nextPostTime: number; // 次回投稿可能時刻（timestamp）
   };
 
+  // いいね済みコメント管理
+  likedComments: string[]; // いいね済みコメントIDの配列
+
   // エラー状態
   error: string | null;
 
@@ -46,6 +49,11 @@ interface UserState {
   // リセット
   clearUser: () => void;
   resetStats: () => void;
+
+  // いいね状態管理
+  isCommentLiked: (commentId: string) => boolean;
+  addLikedComment: (commentId: string) => void;
+  removeLikedComment: (commentId: string) => void;
 
   // デリベートアクション
   generateTempUserId: () => string;
@@ -74,6 +82,7 @@ export const useUserStore = create<UserState>()(
         likesRemaining: 100, // デフォルト制限
         nextPostTime: 0,
       },
+      likedComments: [],
       error: null,
 
       // 基本アクション
@@ -188,6 +197,7 @@ export const useUserStore = create<UserState>()(
             likesRemaining: 100,
             nextPostTime: 0,
           },
+          likedComments: [],
         }),
 
       resetStats: () =>
@@ -211,6 +221,24 @@ export const useUserStore = create<UserState>()(
         const { limits } = get();
         return limits.likesRemaining > 0;
       },
+
+      // いいね状態管理
+      isCommentLiked: (commentId) => {
+        const { likedComments } = get();
+        return likedComments.includes(commentId);
+      },
+
+      addLikedComment: (commentId) => {
+        const { likedComments } = get();
+        if (!likedComments.includes(commentId)) {
+          set({ likedComments: [...likedComments, commentId] });
+        }
+      },
+
+      removeLikedComment: (commentId) => {
+        const { likedComments } = get();
+        set({ likedComments: likedComments.filter((id) => id !== commentId) });
+      },
     }),
     {
       name: 'commentia-user-storage', // localStorage key
@@ -218,6 +246,7 @@ export const useUserStore = create<UserState>()(
         currentUser: state.currentUser,
         isAuthenticated: state.isAuthenticated,
         stats: state.stats,
+        likedComments: state.likedComments,
         // limitsやerrorは永続化しない（セッション毎にリセット）
       }),
     }

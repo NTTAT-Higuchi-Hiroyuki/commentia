@@ -12,13 +12,14 @@ interface CommentItemProps {
 }
 
 export const CommentItem = ({ comment, className = '' }: CommentItemProps) => {
-  const { currentUser, limits } = useUserStore();
+  const { currentUser, limits, isCommentLiked, addLikedComment, removeLikedComment } =
+    useUserStore();
   const { likesRemaining } = limits;
   const deleteCommentMutation = useDeleteComment();
   const likeCommentMutation = useLikeComment();
   const unlikeCommentMutation = useUnlikeComment();
 
-  const [isLiked, setIsLiked] = useState(false); // TODO: リアルタイムでいいね状態を管理
+  const isLiked = isCommentLiked(comment.commentId);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const isOwnComment = currentUser?.userId === comment.userId;
@@ -42,13 +43,19 @@ export const CommentItem = ({ comment, className = '' }: CommentItemProps) => {
     try {
       if (isLiked) {
         await unlikeCommentMutation.mutateAsync(comment.commentId);
-        setIsLiked(false);
+        removeLikedComment(comment.commentId);
       } else {
         await likeCommentMutation.mutateAsync(comment.commentId);
-        setIsLiked(true);
+        addLikedComment(comment.commentId);
       }
     } catch (error) {
       console.error('いいね操作エラー:', error);
+      // エラー時は状態を元に戻す
+      if (isLiked) {
+        addLikedComment(comment.commentId);
+      } else {
+        removeLikedComment(comment.commentId);
+      }
     }
   };
 
@@ -172,12 +179,16 @@ export const CommentItem = ({ comment, className = '' }: CommentItemProps) => {
             size="sm"
             onClick={handleLikeClick}
             disabled={isLikeLoading || (!canLike && !canUnlike)}
-            className={`flex items-center space-x-1 ${
-              isLiked ? 'text-red-500 hover:text-red-600' : 'text-gray-500 hover:text-red-500'
-            }`}
+            className={`group flex items-center space-x-1 transition-all duration-200 ease-in-out transform ${
+              isLiked
+                ? 'text-red-500 hover:text-red-600 scale-110'
+                : 'text-gray-500 hover:text-red-500 hover:scale-105'
+            } ${isLikeLoading ? 'animate-pulse' : ''} active:scale-95`}
           >
             <svg
-              className={`w-4 h-4 ${isLiked ? 'fill-current' : ''}`}
+              className={`w-4 h-4 transition-all duration-300 ease-in-out ${
+                isLiked ? 'fill-current scale-110 drop-shadow-sm' : 'group-hover:scale-110'
+              }`}
               fill={isLiked ? 'currentColor' : 'none'}
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -191,7 +202,11 @@ export const CommentItem = ({ comment, className = '' }: CommentItemProps) => {
                 d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
               />
             </svg>
-            <span className="text-sm">{comment.likeCount}</span>
+            <span
+              className={`text-sm transition-all duration-200 ${isLikeLoading ? 'opacity-50' : ''}`}
+            >
+              {comment.likeCount}
+            </span>
           </Button>
 
           {/* いいね制限表示 */}
