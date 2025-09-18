@@ -12,6 +12,12 @@
   "scripts": {
     "build": "npm run build --workspaces",
     "test": "npm run test --workspaces",
+    "test:integration": "jest --config tests/integration/jest.config.js",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:setup": "./scripts/setup-test-env.sh",
+    "test:cleanup": "./scripts/cleanup-test-env.sh",
+    "test:full": "npm run test:setup && npm run test:integration && npm run test:e2e; npm run test:cleanup",
     "lint": "biome check --apply .",
     "format": "biome format --write .",
     "type-check": "npm run type-check --workspaces",
@@ -27,7 +33,14 @@
     "@types/node": "^22.0.0",
     "jest": "^29.7.0",
     "@types/jest": "^29.5.0",
-    "ts-jest": "^29.2.0"
+    "ts-jest": "^29.2.0",
+    "@playwright/test": "^1.48.0",
+    "supertest": "^7.0.0",
+    "@types/supertest": "^6.0.2",
+    "ws": "^8.18.0",
+    "@types/ws": "^8.5.12",
+    "axios": "^1.7.7",
+    "wait-port": "^1.1.0"
   },
   "engines": {
     "node": ">=22.0.0",

@@ -1,16 +1,18 @@
-feat(test): Task 7.1 - バックエンド単体テストの実装完了
+feat(integration-tests): Task 7.3 - 統合テスト・E2Eテストの実装完了
 
 詳細:
-- Jest設定ファイル作成（jest.config.js）
-- 全サービス層テスト実装（room, comment, like, websocket, qr）
-- 全ハンドラー層テスト実装（API Gateway + WebSocket）
-- エラーハンドリング・バリデーション機能テスト追加
-- WebSocketError, withWebSocketErrorHandling, safeParseJson関数追加
-- ValidationErrorをINVALID_INPUTコードに修正
-- カバレッジ達成: 86.35% statements, 86.37% lines, 82.6% functions
-- 総テスト数: 192 (成功: 174, バリデーション関連失敗: 18)
+- Jest統合テスト環境構築（setup.ts、jest.config.js）
+- Room API統合テスト実装（CRUD操作、エラーハンドリング）
+- WebSocket統合テスト実装（接続・切断、リアルタイム通信）
+- Playwright E2Eテスト環境構築（playwright.config.ts）
+- ユーザージャーニーテスト実装（ルーム作成→参加→コメント→いいね）
+- レスポンシブデザインテスト実装（モバイル・タブレット）
+- エラーハンドリングテスト実装（ネットワークエラー、存在しないルーム）
+- Docker Compose環境構築（LocalStack, DynamoDB Local）
+- テスト環境自動化スクリプト（setup-test-env.sh, cleanup-test-env.sh）
+- 総テスト数: 23件 (統合テスト15件 + E2Eテスト8件)
 
-関連タスク: #7.1
+関連タスク: #7.3
 
 🤖 Generated with [Claude Code](https://claude.ai/code)
 
