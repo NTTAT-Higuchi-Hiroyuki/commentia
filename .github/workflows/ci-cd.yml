@@ -1,0 +1,414 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      stage:
+        description: 'Deployment stage'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+        - dev
+        - staging
+        - prod
+
+env:
+  NODE_VERSION: '22'
+  AWS_REGION: 'us-east-1'
+
+jobs:
+  # ビルドとテスト実行
+  test:
+    name: Test and Build
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        package: [backend, frontend, infrastructure]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run linting
+      run: npm run lint
+
+    - name: Run type checking
+      run: npm run type-check
+      working-directory: packages/${{ matrix.package }}
+
+    - name: Run tests
+      run: npm test
+      working-directory: packages/${{ matrix.package }}
+
+    - name: Build project
+      run: npm run build
+      working-directory: packages/${{ matrix.package }}
+
+    - name: Upload build artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-${{ matrix.package }}
+        path: packages/${{ matrix.package }}/dist
+        retention-days: 1
+
+  # セキュリティスキャン
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run npm audit
+      run: npm audit --audit-level=moderate
+
+    - name: Run CodeQL Analysis
+      uses: github/codeql-action/init@v3
+      with:
+        languages: javascript-typescript
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v3
+
+  # 統合テスト（LocalStack使用）
+  integration-test:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    needs: [test]
+
+    services:
+      localstack:
+        image: localstack/localstack:3.0
+        ports:
+          - 4566:4566
+        env:
+          SERVICES: dynamodb,lambda,apigateway,s3,cloudformation
+          DEBUG: 1
+          DATA_DIR: /tmp/localstack/data
+          HOST_TMP_FOLDER: /tmp/localstack
+        options: >-
+          --health-cmd="curl -f http://localhost:4566/_localstack/health"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=3
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: build-*
+        merge-multiple: true
+
+    - name: Wait for LocalStack
+      run: |
+        timeout 60 bash -c 'until curl -f http://localhost:4566/_localstack/health; do sleep 2; done'
+
+    - name: Run integration tests
+      run: npm run test:integration
+      working-directory: packages/backend
+      env:
+        LOCALSTACK_ENDPOINT: http://localhost:4566
+        DYNAMODB_ENDPOINT: http://localhost:4566
+
+  # E2Eテスト
+  e2e-test:
+    name: E2E Tests
+    runs-on: ubuntu-latest
+    needs: [test, integration-test]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps
+      working-directory: packages/frontend
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: build-*
+        merge-multiple: true
+
+    - name: Run E2E tests
+      run: npm run test:e2e
+      working-directory: packages/frontend
+
+    - name: Upload Playwright report
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: playwright-report
+        path: packages/frontend/playwright-report/
+        retention-days: 30
+
+  # 開発環境デプロイ
+  deploy-dev:
+    name: Deploy to Development
+    runs-on: ubuntu-latest
+    needs: [test, security]
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    environment: development
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_DEV }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_DEV }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: build-*
+        merge-multiple: true
+
+    - name: Deploy to development
+      run: npm run deploy:dev
+      working-directory: packages/infrastructure
+      env:
+        STAGE: dev
+
+    - name: Run smoke tests
+      run: npm run test:smoke
+      working-directory: packages/backend
+      env:
+        API_ENDPOINT: ${{ steps.deploy.outputs.api-endpoint }}
+        WEBSOCKET_ENDPOINT: ${{ steps.deploy.outputs.websocket-endpoint }}
+
+  # ステージング環境デプロイ
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [test, security, integration-test]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: staging
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_STAGING }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_STAGING }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: build-*
+        merge-multiple: true
+
+    - name: Deploy to staging
+      run: npm run deploy:staging
+      working-directory: packages/infrastructure
+      env:
+        STAGE: staging
+        CUSTOM_DOMAIN_NAME: ${{ secrets.STAGING_DOMAIN_NAME }}
+        CERTIFICATE_ARN: ${{ secrets.STAGING_CERTIFICATE_ARN }}
+
+    - name: Run smoke tests
+      run: npm run test:smoke
+      working-directory: packages/backend
+      env:
+        API_ENDPOINT: ${{ steps.deploy.outputs.api-endpoint }}
+        WEBSOCKET_ENDPOINT: ${{ steps.deploy.outputs.websocket-endpoint }}
+
+    - name: Run performance tests
+      run: npm run test:performance
+      working-directory: packages/backend
+      env:
+        API_ENDPOINT: ${{ steps.deploy.outputs.api-endpoint }}
+
+  # 本番環境デプロイ
+  deploy-prod:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [test, security, integration-test, e2e-test]
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.stage == 'prod'
+    environment: production
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Download build artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: build-*
+        merge-multiple: true
+
+    - name: Deploy to production
+      run: npm run deploy:prod
+      working-directory: packages/infrastructure
+      env:
+        STAGE: prod
+        CUSTOM_DOMAIN_NAME: ${{ secrets.PROD_DOMAIN_NAME }}
+        CERTIFICATE_ARN: ${{ secrets.PROD_CERTIFICATE_ARN }}
+
+    - name: Run smoke tests
+      run: npm run test:smoke
+      working-directory: packages/backend
+      env:
+        API_ENDPOINT: ${{ steps.deploy.outputs.api-endpoint }}
+        WEBSOCKET_ENDPOINT: ${{ steps.deploy.outputs.websocket-endpoint }}
+
+    - name: Create deployment tag
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git tag -a "release-$(date +%Y%m%d-%H%M%S)" -m "Production deployment $(date)"
+        git push origin --tags
+
+  # ロールバック機能
+  rollback:
+    name: Rollback Deployment
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.stage == 'rollback'
+    environment: production
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID_PROD }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY_PROD }}
+        aws-region: ${{ env.AWS_REGION }}
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Get previous deployment
+      id: previous
+      run: |
+        # 最新のタグから1つ前のデプロイメントタグを取得
+        PREVIOUS_TAG=$(git tag -l "release-*" | sort -V | tail -2 | head -1)
+        echo "tag=$PREVIOUS_TAG" >> $GITHUB_OUTPUT
+
+    - name: Rollback to previous version
+      run: |
+        git checkout ${{ steps.previous.outputs.tag }}
+        npm ci
+        npm run deploy:prod
+      working-directory: packages/infrastructure
+      env:
+        STAGE: prod
+
+    - name: Verify rollback
+      run: npm run test:smoke
+      working-directory: packages/backend
+
+  # 通知
+  notify:
+    name: Notify Deployment Status
+    runs-on: ubuntu-latest
+    needs: [deploy-dev, deploy-staging, deploy-prod]
+    if: always()
+
+    steps:
+    - name: Notify Slack
+      uses: 8398a7/action-slack@v3
+      if: env.SLACK_WEBHOOK_URL != ''
+      with:
+        status: ${{ job.status }}
+        channel: '#deployments'
+        text: |
+          Deployment Status: ${{ job.status }}
+          Environment: ${{ github.event.inputs.stage || 'auto' }}
+          Commit: ${{ github.sha }}
+          Author: ${{ github.actor }}
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}

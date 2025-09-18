@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 💬 Discussion
+    url: https://github.com/commentia-team/commentia/discussions
+    about: General questions and discussions about the project
+  - name: 📚 Documentation
+    url: https://docs.commentia.example.com
+    about: Check our documentation for usage guides and API references
+  - name: 💼 Support
+    url: mailto:support@commentia.example.com
+    about: Contact our support team for help with deployment or configuration

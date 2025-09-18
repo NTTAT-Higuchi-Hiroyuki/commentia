@@ -1,0 +1,107 @@
+version: 2
+updates:
+  # Root level dependencies
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 10
+    reviewers:
+      - "commentia-team"
+    assignees:
+      - "commentia-team"
+    commit-message:
+      prefix: "chore"
+      include: "scope"
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
+    ignore:
+      # Ignore major version updates for stable dependencies
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+
+  # Backend dependencies
+  - package-ecosystem: "npm"
+    directory: "/packages/backend"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "backend-team"
+    commit-message:
+      prefix: "chore(backend)"
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
+
+  # Frontend dependencies
+  - package-ecosystem: "npm"
+    directory: "/packages/frontend"
+    schedule:
+      interval: "weekly"
+      day: "wednesday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "frontend-team"
+    commit-message:
+      prefix: "chore(frontend)"
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
+
+  # Infrastructure dependencies
+  - package-ecosystem: "npm"
+    directory: "/packages/infrastructure"
+    schedule:
+      interval: "weekly"
+      day: "thursday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    reviewers:
+      - "devops-team"
+    commit-message:
+      prefix: "chore(infrastructure)"
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
+    ignore:
+      # CDK updates require careful testing
+      - dependency-name: "aws-cdk-lib"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "aws-cdk"
+        update-types: ["version-update:semver-major"]
+
+  # Shared package dependencies
+  - package-ecosystem: "npm"
+    directory: "/packages/shared"
+    schedule:
+      interval: "weekly"
+      day: "friday"
+      time: "09:00"
+    open-pull-requests-limit: 3
+    reviewers:
+      - "commentia-team"
+    commit-message:
+      prefix: "chore(shared)"
+    allow:
+      - dependency-type: "direct"
+      - dependency-type: "indirect"
+
+  # GitHub Actions updates
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 3
+    reviewers:
+      - "devops-team"
+    commit-message:
+      prefix: "chore(ci)"

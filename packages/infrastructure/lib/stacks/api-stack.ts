@@ -1,5 +1,7 @@
 import * as cdk from 'aws-cdk-lib';
 import * as apigateway from 'aws-cdk-lib/aws-apigateway';
+import * as acm from 'aws-cdk-lib/aws-certificatemanager';
+import * as logs from 'aws-cdk-lib/aws-logs';
 import type { Construct } from 'constructs';
 import { LambdaFunction } from '../constructs/lambda-function';
 import type { TablesConfig } from './database-stack';
@@ -7,27 +9,43 @@ import type { TablesConfig } from './database-stack';
 export interface ApiStackProps extends cdk.StackProps {
   stage: 'dev' | 'staging' | 'prod';
   tablesConfig: TablesConfig;
+  customDomainName?: string;
+  certificateArn?: string;
 }
 
 export class ApiStack extends cdk.Stack {
   public readonly apiEndpoint: string;
   public readonly api: apigateway.RestApi;
+  public readonly customDomain?: apigateway.DomainName;
   private readonly requestValidator: apigateway.RequestValidator;
 
   constructor(scope: Construct, id: string, props: ApiStackProps) {
     super(scope, id, props);
 
-    // REST API Gateway with enhanced configuration
+    // カスタムドメインの設定（オプション）
+    if (props.customDomainName && props.certificateArn) {
+      this.customDomain = new apigateway.DomainName(this, 'CustomDomain', {
+        domainName: props.customDomainName,
+        certificate: acm.Certificate.fromCertificateArn(this, 'Certificate', props.certificateArn),
+        endpointType: apigateway.EndpointType.REGIONAL,
+        securityPolicy: apigateway.SecurityPolicy.TLS_1_2,
+      });
+    }
+
+    // Access Logs用のCloudWatch Logs Group
+    const accessLogGroup = new logs.LogGroup(this, 'ApiAccessLogs', {
+      logGroupName: `/aws/apigateway/commentia-${props.stage}`,
+      retention: this.getLogRetention(props.stage),
+      removalPolicy: props.stage === 'prod' ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
+    });
+
+    // API Gateway
     this.api = new apigateway.RestApi(this, 'CommentiaApi', {
       restApiName: `commentia-api-${props.stage}`,
-      description: `Commentia REST API - ${props.stage}`,
-
-      // CORS Configuration - 本番環境では特定のオリジンに制限
+      description: `Commentia API - ${props.stage}`,
+      // CORS設定（プリフライトリクエスト用）
       defaultCorsPreflightOptions: {
-        allowOrigins:
-          props.stage === 'prod'
-            ? ['https://commentia.example.com'] // TODO: 本番ドメインに置き換え
-            : apigateway.Cors.ALL_ORIGINS,
+        allowOrigins: this.getAllowedOrigins(props.stage),
         allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
         allowHeaders: [
           'Content-Type',
@@ -35,456 +53,444 @@ export class ApiStack extends cdk.Stack {
           'Authorization',
           'X-Api-Key',
           'X-Amz-Security-Token',
-          'X-Requested-With',
+          'X-Amz-User-Agent',
         ],
         allowCredentials: false,
-        maxAge: cdk.Duration.hours(1),
       },
 
-      // Deploy Options with Rate Limiting & Throttling
+      // CloudWatch ログ設定
+      cloudWatchRole: true,
+      cloudWatchRoleRemovalPolicy:
+        props.stage === 'prod' ? cdk.RemovalPolicy.RETAIN : cdk.RemovalPolicy.DESTROY,
+
+      // アクセスログ設定
       deployOptions: {
         stageName: props.stage,
-        // レート制限設定（要件に基づく）
-        throttlingRateLimit: props.stage === 'prod' ? 1000 : 500, // requests/second
-        throttlingBurstLimit: props.stage === 'prod' ? 2000 : 1000, // burst limit
-        // ロギング設定
-        loggingLevel: apigateway.MethodLoggingLevel.INFO,
-        dataTraceEnabled: props.stage !== 'prod', // 本番環境では無効化
+        accessLogDestination: new apigateway.LogGroupLogDestination(accessLogGroup),
+        accessLogFormat: apigateway.AccessLogFormat.jsonWithStandardFields({
+          caller: true,
+          httpMethod: true,
+          ip: true,
+          protocol: true,
+          requestTime: true,
+          resourcePath: true,
+          responseLength: true,
+          status: true,
+          user: true,
+        }),
+
+        // メトリクス設定
         metricsEnabled: true,
+        dataTraceEnabled: props.stage !== 'prod',
+        loggingLevel:
+          props.stage === 'prod'
+            ? apigateway.MethodLoggingLevel.ERROR
+            : apigateway.MethodLoggingLevel.INFO,
       },
 
-      // API Gateway の種類を明示的に設定
-      endpointTypes: [apigateway.EndpointType.REGIONAL],
+      // 圧縮設定
+      minCompressionSize: cdk.Size.kibibytes(1),
 
-      // Binary Media Types (将来のファイルアップロード用)
+      // バイナリメディアタイプ（必要に応じて）
       binaryMediaTypes: ['image/*', 'application/octet-stream'],
 
-      // Minimum Compression Size
-      minimumCompressionSize: 1024,
+      // エンドポイント設定
+      endpointConfiguration: {
+        types: [apigateway.EndpointType.REGIONAL],
+      },
     });
 
-    // Global Request Validator
+    // スロットリング設定をCarbon後に追加
+    const throttleRateLimit = this.getRateLimit(props.stage);
+    const throttleBurstLimit = this.getBurstLimit(props.stage);
+
+    // Lambda関数の設定
+    const lambdaFunctions = this.createLambdaFunctions(props);
+
+    // API エンドポイントの設定
+    this.setupApiEndpoints(lambdaFunctions);
+
+    // デプロイ後にスロットリング設定を適用
+    const defaultMethodOptions: apigateway.MethodOptions = {
+      throttling: {
+        rateLimit: throttleRateLimit,
+        burstLimit: throttleBurstLimit,
+      },
+    };
+
+    // リクエストバリデーター
     this.requestValidator = new apigateway.RequestValidator(this, 'RequestValidator', {
-      restApi: this.api as apigateway.IRestApi,
+      restApi: this.api,
+      requestValidatorName: `commentia-validator-${props.stage}`,
       validateRequestBody: true,
       validateRequestParameters: true,
     });
 
-    // Lambda環境変数
-    const lambdaEnvironment = {
-      STAGE: props.stage,
-      REGION: this.region,
-      ROOMS_TABLE_NAME: props.tablesConfig.roomsTable.tableName,
-      COMMENTS_TABLE_NAME: props.tablesConfig.commentsTable.tableName,
-      CONNECTIONS_TABLE_NAME: props.tablesConfig.connectionsTable.tableName,
-      LIKES_TABLE_NAME: props.tablesConfig.likesTable.tableName,
-    };
+    // カスタムドメインマッピング
+    if (this.customDomain) {
+      new apigateway.BasePathMapping(this, 'BasePathMapping', {
+        domainName: this.customDomain,
+        restApi: this.api,
+        basePath: '',
+      });
+    }
 
-    // Room Service Lambda Function
-    const roomService = new LambdaFunction(this, 'RoomService', {
-      functionName: `commentia-room-service-${props.stage}`,
-      description: `Commentia Room Service Lambda - ${props.stage}`,
-      entry: '../backend/src/handlers/room-handler.ts',
-      handler: 'handler',
-      stage: props.stage,
-      environment: lambdaEnvironment,
-    });
+    // Gateway Responses（エラーレスポンスのカスタマイズ）
+    this.addGatewayResponses();
 
-    // DynamoDBテーブルへのアクセス権限を付与
-    props.tablesConfig.roomsTable.grantReadWriteData(roomService.function);
+    // API エンドポイント URL の設定
+    this.apiEndpoint = this.customDomain ? `https://${this.customDomain.domainName}` : this.api.url;
 
-    // Comment Service Lambda Function
-    const commentService = new LambdaFunction(this, 'CommentService', {
-      functionName: `commentia-comment-service-${props.stage}`,
-      description: `Commentia Comment Service Lambda - ${props.stage}`,
-      entry: '../backend/src/handlers/comment-handler.ts',
-      handler: 'handler',
-      stage: props.stage,
-      environment: lambdaEnvironment,
-    });
+    // CloudFormation Outputs
+    this.createOutputs(props.stage);
 
-    // DynamoDBテーブルへのアクセス権限を付与
-    props.tablesConfig.commentsTable.grantReadWriteData(commentService.function);
-    props.tablesConfig.roomsTable.grantReadData(commentService.function); // ルーム設定取得用
+    // セキュリティ強化
+    this.addSecurityHeaders();
 
-    // QR Service Lambda Function
-    const qrService = new LambdaFunction(this, 'QRService', {
-      functionName: `commentia-qr-service-${props.stage}`,
-      description: `Commentia QR Service Lambda - ${props.stage}`,
-      entry: '../backend/src/handlers/qr-handler.ts',
-      handler: 'generateQRCodeHandler',
-      stage: props.stage,
-      environment: {
-        ...lambdaEnvironment,
-        FRONTEND_URL:
-          props.stage === 'prod'
-            ? 'https://commentia.example.com' // TODO: 本番ドメインに置き換え
-            : 'http://localhost:3000', // 開発環境用
-      },
-    });
-
-    // QR Serviceは読み取り専用のため、特別なDynamoDBアクセス権限は不要
-
-    // API ルートの設定
-    this.setupRoomApiRoutes(roomService);
-    this.setupCommentApiRoutes(commentService);
-    this.setupQRApiRoutes(qrService);
-
-    // Gateway Responses for better error handling
-    this.setupGatewayResponses();
-
-    // Usage Plan for API Key management (optional for future)
-    this.setupUsagePlan();
-
-    this.apiEndpoint = this.api.url;
-
-    // Output
-    new cdk.CfnOutput(this, 'ApiEndpoint', {
-      value: this.apiEndpoint,
-      description: 'REST API Gateway Endpoint',
-      exportName: `commentia-api-endpoint-${props.stage}`,
-    });
-
-    new cdk.CfnOutput(this, 'ApiId', {
-      value: this.api.restApiId,
-      description: 'REST API Gateway ID',
-      exportName: `commentia-api-id-${props.stage}`,
-    });
+    // リソースポリシー（オプション）
+    if (props.stage === 'prod') {
+      this.addResourcePolicy();
+    }
   }
 
-  /**
-   * カスタムゲートウェイレスポンス設定
-   * 適切なエラーメッセージとCORSヘッダーを返す
-   */
-  private setupGatewayResponses(): void {
-    // 400 Bad Request
-    this.api.addGatewayResponse('BadRequest', {
-      type: apigateway.ResponseType.BAD_REQUEST_BODY,
-      statusCode: '400',
+  private getLogRetention(stage: string): logs.RetentionDays {
+    switch (stage) {
+      case 'prod':
+        return logs.RetentionDays.ONE_MONTH;
+      case 'staging':
+        return logs.RetentionDays.ONE_WEEK;
+      default:
+        return logs.RetentionDays.THREE_DAYS;
+    }
+  }
+
+  private getAllowedOrigins(stage: string): string[] {
+    switch (stage) {
+      case 'prod':
+        return ['https://commentia.example.com'];
+      case 'staging':
+        return ['https://staging.commentia.example.com'];
+      default:
+        return ['*']; // 開発環境では全て許可
+    }
+  }
+
+  private getRateLimit(stage: string): number {
+    switch (stage) {
+      case 'prod':
+        return 1000;
+      case 'staging':
+        return 500;
+      default:
+        return 100;
+    }
+  }
+
+  private getBurstLimit(stage: string): number {
+    switch (stage) {
+      case 'prod':
+        return 2000;
+      case 'staging':
+        return 1000;
+      default:
+        return 200;
+    }
+  }
+
+  private createLambdaFunctions(props: ApiStackProps) {
+    const commonLambdaProps = {
+      stage: props.stage,
+      tables: [
+        props.tablesConfig.roomsTable,
+        props.tablesConfig.commentsTable,
+        props.tablesConfig.connectionsTable,
+        props.tablesConfig.likesTable,
+      ],
+    };
+
+    // Comment管理Lambda
+    const commentFunction = new LambdaFunction(this, 'CommentFunction', {
+      ...commonLambdaProps,
+      functionName: 'comment-handler',
+      description: 'Handle comment operations',
+      entry: '/Users/higu/Project/commentia/packages/backend/src/handlers/comment-handler.ts',
+      timeout: cdk.Duration.seconds(30),
+    });
+
+    // Room管理Lambda
+    const roomFunction = new LambdaFunction(this, 'RoomFunction', {
+      ...commonLambdaProps,
+      functionName: 'room-handler',
+      description: 'Handle room operations',
+      entry: '/Users/higu/Project/commentia/packages/backend/src/handlers/room-handler.ts',
+      timeout: cdk.Duration.seconds(30),
+    });
+
+    // Like管理Lambda
+    const likeFunction = new LambdaFunction(this, 'LikeFunction', {
+      ...commonLambdaProps,
+      functionName: 'like-handler',
+      description: 'Handle like operations',
+      entry: '/Users/higu/Project/commentia/packages/backend/src/handlers/like-handler.ts',
+      timeout: cdk.Duration.seconds(15),
+    });
+
+    // QR生成Lambda
+    const qrFunction = new LambdaFunction(this, 'QrFunction', {
+      ...commonLambdaProps,
+      functionName: 'qr-handler',
+      description: 'Handle QR code generation',
+      entry: '/Users/higu/Project/commentia/packages/backend/src/handlers/qr-handler.ts',
+      timeout: cdk.Duration.seconds(15),
+    });
+
+    return {
+      commentFunction,
+      roomFunction,
+      likeFunction,
+      qrFunction,
+    };
+  }
+
+  private setupApiEndpoints(functions: {
+    commentFunction: LambdaFunction;
+    roomFunction: LambdaFunction;
+    likeFunction: LambdaFunction;
+    qrFunction: LambdaFunction;
+  }) {
+    // /rooms リソース
+    const roomsResource = this.api.root.addResource('rooms');
+
+    // POST /rooms - ルーム作成
+    roomsResource.addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(functions.roomFunction.function, {
+        proxy: false,
+        integrationResponses: [
+          {
+            statusCode: '200',
+            responseParameters: {
+              'method.response.header.Access-Control-Allow-Origin': "'*'",
+            },
+          },
+          {
+            statusCode: '400',
+            responseParameters: {
+              'method.response.header.Access-Control-Allow-Origin': "'*'",
+            },
+          },
+        ],
+      }),
+      {
+        requestValidator: this.requestValidator,
+        methodResponses: [
+          {
+            statusCode: '200',
+            responseParameters: {
+              'method.response.header.Access-Control-Allow-Origin': true,
+            },
+          },
+          {
+            statusCode: '400',
+            responseParameters: {
+              'method.response.header.Access-Control-Allow-Origin': true,
+            },
+          },
+        ],
+      }
+    );
+
+    // GET /rooms/{roomId} - ルーム情報取得
+    const roomResource = roomsResource.addResource('{roomId}');
+    roomResource.addMethod(
+      'GET',
+      new apigateway.LambdaIntegration(functions.roomFunction.function)
+    );
+
+    // /rooms/{roomId}/comments リソース
+    const commentsResource = roomResource.addResource('comments');
+
+    // GET /rooms/{roomId}/comments - コメント一覧取得
+    commentsResource.addMethod(
+      'GET',
+      new apigateway.LambdaIntegration(functions.commentFunction.function)
+    );
+
+    // POST /rooms/{roomId}/comments - コメント投稿
+    commentsResource.addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(functions.commentFunction.function),
+      {
+        requestValidator: this.requestValidator,
+      }
+    );
+
+    // /rooms/{roomId}/comments/{commentId} リソース
+    const commentResource = commentsResource.addResource('{commentId}');
+
+    // DELETE /rooms/{roomId}/comments/{commentId} - コメント削除
+    commentResource.addMethod(
+      'DELETE',
+      new apigateway.LambdaIntegration(functions.commentFunction.function)
+    );
+
+    // /rooms/{roomId}/comments/{commentId}/like リソース
+    const likeResource = commentResource.addResource('like');
+
+    // POST /rooms/{roomId}/comments/{commentId}/like - いいね追加
+    likeResource.addMethod(
+      'POST',
+      new apigateway.LambdaIntegration(functions.likeFunction.function)
+    );
+
+    // DELETE /rooms/{roomId}/comments/{commentId}/like - いいね削除
+    likeResource.addMethod(
+      'DELETE',
+      new apigateway.LambdaIntegration(functions.likeFunction.function)
+    );
+
+    // /qr リソース
+    const qrResource = this.api.root.addResource('qr');
+
+    // GET /qr/{roomId} - QRコード生成
+    const qrRoomResource = qrResource.addResource('{roomId}');
+    qrRoomResource.addMethod(
+      'GET',
+      new apigateway.LambdaIntegration(functions.qrFunction.function)
+    );
+
+    // /health リソース（ヘルスチェック）
+    const healthResource = this.api.root.addResource('health');
+    healthResource.addMethod(
+      'GET',
+      new apigateway.MockIntegration({
+        integrationResponses: [
+          {
+            statusCode: '200',
+            responseTemplates: {
+              'application/json': JSON.stringify({
+                status: 'healthy',
+                timestamp: '$context.requestTime',
+                version: '1.0.0',
+              }),
+            },
+          },
+        ],
+        requestTemplates: {
+          'application/json': JSON.stringify({ statusCode: 200 }),
+        },
+      }),
+      {
+        methodResponses: [{ statusCode: '200' }],
+      }
+    );
+  }
+
+  private addGatewayResponses() {
+    // 4XX エラー
+    this.api.addGatewayResponse('Default4XX', {
+      type: apigateway.ResponseType.DEFAULT_4XX,
       responseHeaders: {
         'Access-Control-Allow-Origin': "'*'",
         'Access-Control-Allow-Headers': "'*'",
+        'Access-Control-Allow-Methods': "'*'",
       },
       templates: {
         'application/json': JSON.stringify({
-          error: 'Bad Request',
-          message: '$context.error.validationErrorString',
+          error: '$context.error.message',
           requestId: '$context.requestId',
+          timestamp: '$context.requestTime',
         }),
       },
     });
 
-    // 401 Unauthorized
-    this.api.addGatewayResponse('Unauthorized', {
-      type: apigateway.ResponseType.UNAUTHORIZED,
-      statusCode: '401',
+    // 5XX エラー
+    this.api.addGatewayResponse('Default5XX', {
+      type: apigateway.ResponseType.DEFAULT_5XX,
       responseHeaders: {
         'Access-Control-Allow-Origin': "'*'",
         'Access-Control-Allow-Headers': "'*'",
+        'Access-Control-Allow-Methods': "'*'",
       },
       templates: {
         'application/json': JSON.stringify({
-          error: 'Unauthorized',
-          message: 'Authentication required',
+          error: 'Internal Server Error',
           requestId: '$context.requestId',
+          timestamp: '$context.requestTime',
         }),
       },
     });
 
-    // 403 Forbidden
-    this.api.addGatewayResponse('Forbidden', {
-      type: apigateway.ResponseType.ACCESS_DENIED,
-      statusCode: '403',
-      responseHeaders: {
-        'Access-Control-Allow-Origin': "'*'",
-        'Access-Control-Allow-Headers': "'*'",
-      },
-      templates: {
-        'application/json': JSON.stringify({
-          error: 'Forbidden',
-          message: 'Access denied',
-          requestId: '$context.requestId',
-        }),
-      },
-    });
-
-    // 404 Not Found
-    this.api.addGatewayResponse('NotFound', {
-      type: apigateway.ResponseType.RESOURCE_NOT_FOUND,
-      statusCode: '404',
-      responseHeaders: {
-        'Access-Control-Allow-Origin': "'*'",
-        'Access-Control-Allow-Headers': "'*'",
-      },
-      templates: {
-        'application/json': JSON.stringify({
-          error: 'Not Found',
-          message: 'Resource not found',
-          requestId: '$context.requestId',
-        }),
-      },
-    });
-
-    // 429 Too Many Requests
-    this.api.addGatewayResponse('TooManyRequests', {
+    // レート制限エラー
+    this.api.addGatewayResponse('Throttled', {
       type: apigateway.ResponseType.THROTTLED,
-      statusCode: '429',
       responseHeaders: {
         'Access-Control-Allow-Origin': "'*'",
-        'Access-Control-Allow-Headers': "'*'",
         'Retry-After': "'60'",
       },
       templates: {
         'application/json': JSON.stringify({
           error: 'Too Many Requests',
-          message: 'Rate limit exceeded. Please try again later.',
-          requestId: '$context.requestId',
+          message: 'Rate limit exceeded',
+          retryAfter: 60,
         }),
       },
     });
+  }
 
-    // 500 Internal Server Error
-    this.api.addGatewayResponse('InternalServerError', {
-      type: apigateway.ResponseType.DEFAULT_5XX,
-      statusCode: '500',
+  private addSecurityHeaders() {
+    // セキュリティヘッダーの追加
+    this.api.addGatewayResponse('SecurityHeaders', {
+      type: apigateway.ResponseType.DEFAULT_4XX,
       responseHeaders: {
-        'Access-Control-Allow-Origin': "'*'",
-        'Access-Control-Allow-Headers': "'*'",
-      },
-      templates: {
-        'application/json': JSON.stringify({
-          error: 'Internal Server Error',
-          message: 'An internal error occurred',
-          requestId: '$context.requestId',
-        }),
+        'X-Content-Type-Options': "'nosniff'",
+        'X-Frame-Options': "'DENY'",
+        'X-XSS-Protection': "'1; mode=block'",
+        'Strict-Transport-Security': "'max-age=31536000; includeSubDomains'",
+        'Referrer-Policy': "'strict-origin-when-cross-origin'",
       },
     });
   }
 
-  /**
-   * Usage Plan設定（将来的なAPI Key管理用）
-   */
-  private setupUsagePlan(): void {
-    const plan = new apigateway.UsagePlan(this, 'CommentiaUsagePlan', {
-      name: `commentia-usage-plan-${this.node.tryGetContext('stage') || 'dev'}`,
-      description: 'Usage plan for Commentia API',
-      throttle: {
-        rateLimit: 1000,
-        burstLimit: 2000,
-      },
-      quota: {
-        limit: 10000,
-        period: apigateway.Period.DAY,
-      },
-      apiStages: [
-        {
-          api: this.api as apigateway.IRestApi,
-          stage: this.api.deploymentStage,
-        },
-      ],
-    });
-
-    // 将来的な拡張性のため変数を保持
-    // Usage Plan は必要に応じて API Key と関連付け可能
-    // 現在の要件では認証なしのため、準備のみ
-    void plan; // 未使用警告を回避
-  }
-
-  /**
-   * Request Validator を取得するためのゲッター
-   * Task 3.1 で Lambda との統合時に使用
-   */
-  public getRequestValidator(): apigateway.RequestValidator {
-    return this.requestValidator;
-  }
-
-  /**
-   * Room Service用APIルートの設定
-   */
-  private setupRoomApiRoutes(roomService: LambdaFunction): void {
-    // /rooms リソース
-    const roomsResource = this.api.root.addResource('rooms');
-
-    // POST /rooms - ルーム作成
-    roomsResource.addMethod('POST', new apigateway.LambdaIntegration(roomService.function), {
-      requestValidator: this.requestValidator,
-      requestModels: {
-        'application/json': this.createRoomRequestModel(),
-      },
-    });
-
-    // /rooms/{roomId} リソース
-    const roomResource = roomsResource.addResource('{roomId}');
-
-    // GET /rooms/{roomId} - ルーム情報取得
-    roomResource.addMethod('GET', new apigateway.LambdaIntegration(roomService.function), {
-      requestValidator: this.requestValidator,
-      requestParameters: {
-        'method.request.path.roomId': true,
-      },
-    });
-
-    // DELETE /rooms/{roomId} - ルーム終了
-    roomResource.addMethod('DELETE', new apigateway.LambdaIntegration(roomService.function), {
-      requestValidator: this.requestValidator,
-      requestParameters: {
-        'method.request.path.roomId': true,
-      },
-    });
-
-    // /rooms/code/{roomCode} - ルームコード検索
-    const codeResource = roomsResource.addResource('code');
-    const roomCodeResource = codeResource.addResource('{roomCode}');
-    roomCodeResource.addMethod('GET', new apigateway.LambdaIntegration(roomService.function), {
-      requestValidator: this.requestValidator,
-      requestParameters: {
-        'method.request.path.roomCode': true,
-      },
-    });
-  }
-
-  /**
-   * Comment Service用APIルートの設定
-   */
-  private setupCommentApiRoutes(commentService: LambdaFunction): void {
-    // 既存の /rooms/{roomId} リソースを取得
-    const roomsResource = this.api.root.getResource('rooms');
-    if (!roomsResource) {
-      throw new Error('Rooms resource not found. Room API routes must be set up first.');
-    }
-
-    const roomResource = roomsResource.getResource('{roomId}');
-    if (!roomResource) {
-      throw new Error('Room resource not found. Room API routes must be set up first.');
-    }
-
-    // POST /rooms/{roomId}/comments - コメント投稿
-    // GET /rooms/{roomId}/comments - コメント一覧取得
-    const commentsResource = roomResource.addResource('comments');
-
-    commentsResource.addMethod('POST', new apigateway.LambdaIntegration(commentService.function), {
-      requestValidator: this.requestValidator,
-      requestModels: {
-        'application/json': this.createCommentRequestModel(),
-      },
-      requestParameters: {
-        'method.request.path.roomId': true,
-      },
-    });
-
-    commentsResource.addMethod('GET', new apigateway.LambdaIntegration(commentService.function), {
-      requestValidator: this.requestValidator,
-      requestParameters: {
-        'method.request.path.roomId': true,
-        'method.request.querystring.sortBy': false,
-        'method.request.querystring.limit': false,
-        'method.request.querystring.cursor': false,
-      },
-    });
-
-    // /comments/{commentId} リソース
-    const commentsRootResource = this.api.root.addResource('comments');
-    const commentResource = commentsRootResource.addResource('{commentId}');
-
-    // DELETE /comments/{commentId} - コメント削除
-    commentResource.addMethod('DELETE', new apigateway.LambdaIntegration(commentService.function), {
-      requestValidator: this.requestValidator,
-      requestParameters: {
-        'method.request.path.commentId': true,
-      },
-    });
-  }
-
-  /**
-   * Room Request Modelの作成
-   */
-  private createRoomRequestModel(): apigateway.Model {
-    return new apigateway.Model(this, 'RoomRequestModel', {
-      restApi: this.api as apigateway.IRestApi,
-      modelName: 'RoomRequest',
-      contentType: 'application/json',
-      schema: {
-        type: apigateway.JsonSchemaType.OBJECT,
-        properties: {
-          hostId: { type: apigateway.JsonSchemaType.STRING },
-          settings: {
-            type: apigateway.JsonSchemaType.OBJECT,
-            properties: {
-              maxCommentsPerUser: {
-                type: apigateway.JsonSchemaType.INTEGER,
-                minimum: 1,
-                maximum: 100,
-              },
-              maxLikesPerUser: {
-                type: apigateway.JsonSchemaType.INTEGER,
-                minimum: 1,
-                maximum: 1000,
-              },
-              commentMaxLength: {
-                type: apigateway.JsonSchemaType.INTEGER,
-                minimum: 1,
-                maximum: 500,
-              },
-            },
+  private addResourcePolicy() {
+    // 本番環境のリソースポリシー
+    this.api.addToResourcePolicy(
+      new cdk.aws_iam.PolicyStatement({
+        effect: cdk.aws_iam.Effect.ALLOW,
+        principals: [new cdk.aws_iam.AnyPrincipal()],
+        actions: ['execute-api:Invoke'],
+        resources: ['arn:aws:execute-api:*:*:*'],
+        conditions: {
+          IpAddress: {
+            'aws:SourceIp': [
+              // 必要に応じて許可するIPアドレス範囲を設定
+              '0.0.0.0/0', // 全て許可（実際の本番環境では制限推奨）
+            ],
           },
         },
-        required: ['hostId'],
-      },
-    });
+      })
+    );
   }
 
-  /**
-   * Comment Request Modelの作成
-   */
-  private createCommentRequestModel(): apigateway.Model {
-    return new apigateway.Model(this, 'CommentRequestModel', {
-      restApi: this.api as apigateway.IRestApi,
-      modelName: 'CommentRequest',
-      contentType: 'application/json',
-      schema: {
-        type: apigateway.JsonSchemaType.OBJECT,
-        properties: {
-          userId: { type: apigateway.JsonSchemaType.STRING },
-          userName: {
-            type: apigateway.JsonSchemaType.STRING,
-            minLength: 1,
-            maxLength: 50,
-          },
-          content: {
-            type: apigateway.JsonSchemaType.STRING,
-            minLength: 1,
-            maxLength: 500,
-          },
-        },
-        required: ['userId', 'userName', 'content'],
-      },
+  private createOutputs(stage: string) {
+    new cdk.CfnOutput(this, 'ApiEndpoint', {
+      value: this.apiEndpoint,
+      description: `API Gateway endpoint for ${stage}`,
+      exportName: `Commentia-Api-Endpoint-${stage}`,
     });
-  }
 
-  /**
-   * QR Service用APIルートの設定
-   */
-  private setupQRApiRoutes(qrService: LambdaFunction): void {
-    // 既存の /rooms/{roomId} リソースを取得
-    const roomsResource = this.api.root.getResource('rooms');
-    if (!roomsResource) {
-      throw new Error('Rooms resource not found. Room API routes must be set up first.');
-    }
-
-    const roomResource = roomsResource.getResource('{roomId}');
-    if (!roomResource) {
-      throw new Error('Room resource not found. Room API routes must be set up first.');
-    }
-
-    // GET /rooms/{roomId}/qr - QRコード生成
-    const qrResource = roomResource.addResource('qr');
-    qrResource.addMethod('GET', new apigateway.LambdaIntegration(qrService.function), {
-      requestValidator: this.requestValidator,
-      requestParameters: {
-        'method.request.path.roomId': true,
-        'method.request.querystring.format': false, // png or svg
-        'method.request.querystring.size': false, // 50-500
-      },
+    new cdk.CfnOutput(this, 'ApiId', {
+      value: this.api.restApiId,
+      description: `API Gateway ID for ${stage}`,
+      exportName: `Commentia-Api-Id-${stage}`,
     });
+
+    if (this.customDomain) {
+      new cdk.CfnOutput(this, 'CustomDomainName', {
+        value: this.customDomain.domainName,
+        description: `Custom domain name for ${stage}`,
+        exportName: `Commentia-Custom-Domain-${stage}`,
+      });
+    }
   }
 }

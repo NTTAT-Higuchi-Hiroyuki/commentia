@@ -18,6 +18,8 @@
     "test:setup": "./scripts/setup-test-env.sh",
     "test:cleanup": "./scripts/cleanup-test-env.sh",
     "test:full": "npm run test:setup && npm run test:integration && npm run test:e2e; npm run test:cleanup",
+    "test:smoke": "./scripts/test-smoke.sh",
+    "test:performance": "./scripts/test-performance.sh",
     "lint": "biome check --apply .",
     "format": "biome format --write .",
     "type-check": "npm run type-check --workspaces",
@@ -25,6 +27,9 @@
     "backend:build": "npm run build -w packages/backend",
     "infra:synth": "npm run synth -w packages/infrastructure",
     "infra:deploy": "npm run deploy -w packages/infrastructure",
+    "infra:deploy:dev": "npm run deploy:dev -w packages/infrastructure",
+    "infra:deploy:staging": "npm run deploy:staging -w packages/infrastructure",
+    "infra:deploy:prod": "npm run deploy:prod -w packages/infrastructure",
     "clean": "npm run clean --workspaces"
   },
   "devDependencies": {

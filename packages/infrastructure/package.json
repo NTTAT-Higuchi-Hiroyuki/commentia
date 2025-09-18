@@ -5,12 +5,25 @@
     "build": "tsc",
     "synth": "cdk synth",
     "deploy": "cdk deploy --all",
+    "deploy:dev": "ts-node scripts/deploy.ts --stage dev",
+    "deploy:staging": "ts-node scripts/deploy.ts --stage staging",
+    "deploy:prod": "ts-node scripts/deploy.ts --stage prod",
+    "deploy:custom": "ts-node scripts/deploy.ts",
     "destroy": "cdk destroy --all",
+    "destroy:dev": "ts-node scripts/deploy.ts --stage dev --destroy",
+    "destroy:staging": "ts-node scripts/deploy.ts --stage staging --destroy",
     "diff": "cdk diff",
+    "diff:dev": "STAGE=dev cdk diff",
+    "diff:staging": "STAGE=staging cdk diff",
+    "diff:prod": "STAGE=prod cdk diff",
+    "list": "cdk list",
     "clean": "rm -rf cdk.out dist",
     "type-check": "tsc --noEmit",
     "test": "jest --passWithNoTests",
-    "test:localstack": "ts-node scripts/test-localstack.ts"
+    "test:localstack": "ts-node scripts/test-localstack.ts",
+    "bootstrap": "cdk bootstrap",
+    "lint": "npx biome check .",
+    "lint:fix": "npx biome check --write ."
   },
   "dependencies": {
     "aws-cdk-lib": "^2.161.0",
@@ -23,6 +36,8 @@
     "@types/node": "^22.0.0",
     "typescript": "^5.7.0",
     "aws-cdk": "^2.161.0",
-    "ts-node": "^10.9.0"
+    "ts-node": "^10.9.0",
+    "jest": "^29.0.0",
+    "@types/jest": "^29.0.0"
   }
 }

@@ -81,8 +81,10 @@ describe('WebSocket Handler', () => {
 
       expect(result.statusCode).toBe(200);
       expect(result.body).toBeDefined();
-      const body = JSON.parse(result.body!);
-      expect(body.message).toBe('Connected successfully');
+      if (result.body) {
+        const body = JSON.parse(result.body);
+        expect(body.message).toBe('Connected successfully');
+      }
       expect(mockWebSocketService.handleConnect).toHaveBeenCalledWith('test-connection-id');
     });
 
@@ -94,8 +96,10 @@ describe('WebSocket Handler', () => {
 
       expect(result.statusCode).toBe(500);
       expect(result.body).toBeDefined();
-      const body = JSON.parse(result.body!);
-      expect(body.error).toBeDefined();
+      if (result.body) {
+        const body = JSON.parse(result.body);
+        expect(body.error).toBeDefined();
+      }
     });
   });
 
@@ -108,8 +112,10 @@ describe('WebSocket Handler', () => {
 
       expect(result.statusCode).toBe(200);
       expect(result.body).toBeDefined();
-      const body = JSON.parse(result.body!);
-      expect(body.message).toBe('Disconnected successfully');
+      if (result.body) {
+        const body = JSON.parse(result.body);
+        expect(body.message).toBe('Disconnected successfully');
+      }
       expect(mockWebSocketService.handleDisconnect).toHaveBeenCalledWith('test-connection-id');
     });
 
@@ -121,8 +127,10 @@ describe('WebSocket Handler', () => {
 
       expect(result.statusCode).toBe(500);
       expect(result.body).toBeDefined();
-      const body = JSON.parse(result.body!);
-      expect(body.error).toBeDefined();
+      if (result.body) {
+        const body = JSON.parse(result.body);
+        expect(body.error).toBeDefined();
+      }
     });
   });
 
@@ -140,10 +148,12 @@ describe('WebSocket Handler', () => {
 
       expect(result.statusCode).toBe(200);
       expect(result.body).toBeDefined();
-      const body = JSON.parse(result.body!);
-      expect(body.message).toBe('Joined room successfully');
-      expect(body.roomId).toBe('room-123');
-      expect(body.userName).toBe('Test User');
+      if (result.body) {
+        const body = JSON.parse(result.body);
+        expect(body.message).toBe('Joined room successfully');
+        expect(body.roomId).toBe('room-123');
+        expect(body.userName).toBe('Test User');
+      }
       expect(mockWebSocketService.joinRoom).toHaveBeenCalledWith('test-connection-id', {
         roomId: 'room-123',
         userName: 'Test User',
@@ -160,9 +170,11 @@ describe('WebSocket Handler', () => {
 
       expect(result.statusCode).toBe(400);
       expect(result.body).toBeDefined();
-      const body = JSON.parse(result.body!);
-      expect(body.error).toBe('VALIDATION_ERROR');
-      expect(body.message).toBe('Room ID is required');
+      if (result.body) {
+        const body = JSON.parse(result.body);
+        expect(body.error).toBe('VALIDATION_ERROR');
+        expect(body.message).toBe('Room ID is required');
+      }
       expect(mockWebSocketService.joinRoom).not.toHaveBeenCalled();
     });
 
@@ -176,9 +188,11 @@ describe('WebSocket Handler', () => {
 
       expect(result.statusCode).toBe(400);
       expect(result.body).toBeDefined();
-      const body = JSON.parse(result.body!);
-      expect(body.error).toBe('VALIDATION_ERROR');
-      expect(body.message).toBe('User name is required');
+      if (result.body) {
+        const body = JSON.parse(result.body);
+        expect(body.error).toBe('VALIDATION_ERROR');
+        expect(body.message).toBe('User name is required');
+      }
       expect(mockWebSocketService.joinRoom).not.toHaveBeenCalled();
     });
 
@@ -195,8 +209,10 @@ describe('WebSocket Handler', () => {
 
       expect(result.statusCode).toBe(500);
       expect(result.body).toBeDefined();
-      const body = JSON.parse(result.body!);
-      expect(body.error).toBeDefined();
+      if (result.body) {
+        const body = JSON.parse(result.body);
+        expect(body.error).toBeDefined();
+      }
     });
 
     test('空のメッセージボディでバリデーションエラーを返す', async () => {
@@ -205,9 +221,11 @@ describe('WebSocket Handler', () => {
 
       expect(result.statusCode).toBe(400);
       expect(result.body).toBeDefined();
-      const body = JSON.parse(result.body!);
-      expect(body.error).toBe('VALIDATION_ERROR');
-      expect(body.message).toBe('Room ID is required');
+      if (result.body) {
+        const body = JSON.parse(result.body);
+        expect(body.error).toBe('VALIDATION_ERROR');
+        expect(body.message).toBe('Room ID is required');
+      }
       expect(mockWebSocketService.joinRoom).not.toHaveBeenCalled();
     });
   });
@@ -232,9 +250,11 @@ describe('WebSocket Handler', () => {
 
       expect(result.statusCode).toBe(200);
       expect(result.body).toBeDefined();
-      const body = JSON.parse(result.body!);
-      expect(body.message).toBe('Left room successfully');
-      expect(body.roomId).toBe('room-123');
+      if (result.body) {
+        const body = JSON.parse(result.body);
+        expect(body.message).toBe('Left room successfully');
+        expect(body.roomId).toBe('room-123');
+      }
       expect(mockWebSocketService.getConnection).toHaveBeenCalledWith('test-connection-id');
       expect(mockWebSocketService.leaveRoom).toHaveBeenCalledWith(
         'test-connection-id',
@@ -251,9 +271,11 @@ describe('WebSocket Handler', () => {
 
       expect(result.statusCode).toBe(400);
       expect(result.body).toBeDefined();
-      const body = JSON.parse(result.body!);
-      expect(body.error).toBe('VALIDATION_ERROR');
-      expect(body.message).toBe('Room ID is required');
+      if (result.body) {
+        const body = JSON.parse(result.body);
+        expect(body.error).toBe('VALIDATION_ERROR');
+        expect(body.message).toBe('Room ID is required');
+      }
       expect(mockWebSocketService.getConnection).not.toHaveBeenCalled();
       expect(mockWebSocketService.leaveRoom).not.toHaveBeenCalled();
     });
@@ -270,9 +292,11 @@ describe('WebSocket Handler', () => {
 
       expect(result.statusCode).toBe(400);
       expect(result.body).toBeDefined();
-      const body = JSON.parse(result.body!);
-      expect(body.error).toBe('VALIDATION_ERROR');
-      expect(body.message).toBe('No active room connection found');
+      if (result.body) {
+        const body = JSON.parse(result.body);
+        expect(body.error).toBe('VALIDATION_ERROR');
+        expect(body.message).toBe('No active room connection found');
+      }
       expect(mockWebSocketService.leaveRoom).not.toHaveBeenCalled();
     });
 
@@ -295,8 +319,10 @@ describe('WebSocket Handler', () => {
 
       expect(result.statusCode).toBe(500);
       expect(result.body).toBeDefined();
-      const body = JSON.parse(result.body!);
-      expect(body.error).toBeDefined();
+      if (result.body) {
+        const body = JSON.parse(result.body);
+        expect(body.error).toBeDefined();
+      }
     });
   });
 
@@ -370,9 +396,11 @@ describe('WebSocket Handler', () => {
 
       expect(result.statusCode).toBe(400);
       expect(result.body).toBeDefined();
-      const body = JSON.parse(result.body!);
-      expect(body.error).toBe('UNKNOWN_ROUTE');
-      expect(body.message).toBe('Unknown route: unknownRoute');
+      if (result.body) {
+        const body = JSON.parse(result.body);
+        expect(body.error).toBe('UNKNOWN_ROUTE');
+        expect(body.message).toBe('Unknown route: unknownRoute');
+      }
     });
 
     test('ハンドラー内でエラーが発生した場合に適切なエラーレスポンスを返す', async () => {
@@ -383,9 +411,11 @@ describe('WebSocket Handler', () => {
 
       expect(result.statusCode).toBe(500);
       expect(result.body).toBeDefined();
-      const body = JSON.parse(result.body!);
-      expect(body.error).toBeDefined();
-      expect(body.requestId).toBe('test-request-id');
+      if (result.body) {
+        const body = JSON.parse(result.body);
+        expect(body.error).toBeDefined();
+        expect(body.requestId).toBe('test-request-id');
+      }
     });
   });
 });
