@@ -473,4 +473,4 @@ export class CommentService {
 }
 
 // シングルトンインスタンス
-export const commentService = new CommentService();
+export const commentService = process.env.NODE_ENV === 'test' ? null : new CommentService();

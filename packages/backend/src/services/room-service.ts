@@ -305,5 +305,5 @@ export class RoomService {
   }
 }
 
-// シングルトンインスタンス
-export const roomService = new RoomService();
+// シングルトンインスタンス（テスト環境では作成しない）
+export const roomService = process.env.NODE_ENV === 'test' ? null : new RoomService();

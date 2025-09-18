@@ -478,4 +478,4 @@ export class WebSocketService {
 }
 
 // インスタンスをエクスポート
-export const webSocketService = new WebSocketService();
+export const webSocketService = process.env.NODE_ENV === 'test' ? null : new WebSocketService();

@@ -1,20 +1,22 @@
-/**
- * Lambda 関数用エラーハンドラー
- * API Gateway、WebSocket API、および内部エラーの統一処理
- */
-
-import type { APIGatewayProxyResult, WebSocketResult } from '../types/index.js';
+import type { APIGatewayProxyResult, Context } from 'aws-lambda';
 import { logger } from './logger.js';
 
-// カスタムエラークラス
+export interface WebSocketResult {
+  statusCode: number;
+  headers?: Record<string, string>;
+  body?: string;
+}
+
+// 基底エラークラス
 export class CommentiaError extends Error {
   public readonly statusCode: number;
   public readonly code: string;
   public readonly isOperational: boolean;
 
-  constructor(message: string, statusCode = 500, code = 'INTERNAL_ERROR', isOperational = true) {
+  constructor(message: string, statusCode: number, code: string, isOperational = true) {
     super(message);
-    this.name = 'CommentiaError';
+
+    this.name = this.constructor.name;
     this.statusCode = statusCode;
     this.code = code;
     this.isOperational = isOperational;
@@ -27,31 +29,31 @@ export class CommentiaError extends Error {
 // 事前定義エラー
 export class ValidationError extends CommentiaError {
   constructor(message: string) {
-    super(message, 400, 'VALIDATION_ERROR');
+    super(message, 400, 'INVALID_INPUT');
   }
 }
 
 export class NotFoundError extends CommentiaError {
-  constructor(resource: string) {
-    super(`${resource} not found`, 404, 'NOT_FOUND');
+  constructor(message: string) {
+    super(message, 404, 'NOT_FOUND');
   }
 }
 
-export class UnauthorizedError extends CommentiaError {
-  constructor(message = 'Unauthorized access') {
-    super(message, 401, 'UNAUTHORIZED');
-  }
-}
-
-export class ForbiddenError extends CommentiaError {
-  constructor(message = 'Access forbidden') {
-    super(message, 403, 'FORBIDDEN');
+export class ConflictError extends CommentiaError {
+  constructor(message: string) {
+    super(message, 409, 'CONFLICT');
   }
 }
 
 export class RateLimitError extends CommentiaError {
-  constructor(message = 'Rate limit exceeded') {
+  constructor(message: string) {
     super(message, 429, 'RATE_LIMIT_EXCEEDED');
+  }
+}
+
+export class InternalError extends CommentiaError {
+  constructor(message: string) {
+    super(message, 500, 'INTERNAL_ERROR');
   }
 }
 
@@ -61,27 +63,35 @@ export class WebSocketError extends CommentiaError {
   }
 }
 
-// API Gateway レスポンス作成
+// APIレスポンス作成
 export function createApiResponse(
   statusCode: number,
-  body: unknown,
+  body?: unknown,
   headers: Record<string, string> = {}
 ): APIGatewayProxyResult {
   const defaultHeaders = {
     'Content-Type': 'application/json',
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Credentials': 'true',
+    'Access-Control-Allow-Headers':
+      'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+    'Access-Control-Allow-Methods': 'OPTIONS,POST,GET,PUT,DELETE',
     ...headers,
   };
 
-  return {
+  const result: APIGatewayProxyResult = {
     statusCode,
     headers: defaultHeaders,
-    body: JSON.stringify(body),
+    body: '',
   };
+
+  if (body) {
+    result.body = JSON.stringify(body);
+  }
+
+  return result;
 }
 
-// WebSocket レスポンス作成
+// WebSocketレスポンス作成
 export function createWebSocketResponse(
   statusCode: number,
   body?: unknown,
@@ -130,7 +140,7 @@ export function createWebSocketErrorResponse(error: Error, requestId?: string): 
   }
 
   // 未処理エラー
-  logger.error('Unhandled WebSocket error', error, { requestId });
+  logger.error('Unhandled error', error, { requestId });
 
   return createWebSocketResponse(500, {
     error: 'INTERNAL_ERROR',
@@ -139,38 +149,83 @@ export function createWebSocketErrorResponse(error: Error, requestId?: string): 
   });
 }
 
-// Lambda ハンドラー用エラーラッパー
-export function withErrorHandling<T extends unknown[]>(
-  handler: (...args: T) => Promise<APIGatewayProxyResult>
-) {
-  return async (...args: T): Promise<APIGatewayProxyResult> => {
+// エラーハンドリングミドルウェア
+export function withErrorHandling<T extends unknown[], R>(handler: (...args: T) => Promise<R>) {
+  return async (...args: T): Promise<R> => {
+    const context = args.find((arg) => arg && typeof arg === 'object' && 'awsRequestId' in arg) as
+      | Context
+      | undefined;
+    const requestId = context?.awsRequestId || 'unknown';
+
     try {
       return await handler(...args);
     } catch (error) {
-      const requestId = args[1] ? (args[1] as { awsRequestId: string }).awsRequestId : undefined;
-      return createErrorResponse(
-        error instanceof Error ? error : new Error(String(error)),
-        requestId
-      );
+      if (error instanceof Error) {
+        logger.error('Unhandled error', error, {
+          requestId,
+        });
+
+        // WebSocketの場合とAPIの場合を判定
+        if (handler.name.includes('websocket') || handler.name.includes('WebSocket')) {
+          return createWebSocketErrorResponse(error, requestId) as R;
+        }
+        return createErrorResponse(error, requestId) as R;
+      }
+
+      // Errorでない例外の場合
+      logger.error('Unknown error type', new Error(String(error)), {
+        requestId,
+      });
+
+      // 500エラーを返す
+      return createErrorResponse(new Error('Unknown error'), requestId) as R;
     }
   };
 }
 
-// WebSocket ハンドラー用エラーラッパー
-export function withWebSocketErrorHandling<T extends unknown[]>(
-  handler: (...args: T) => Promise<WebSocketResult>
+// WebSocket専用エラーハンドリングミドルウェア
+export function withWebSocketErrorHandling<T extends unknown[], R>(
+  handler: (...args: T) => Promise<R>
 ) {
-  return async (...args: T): Promise<WebSocketResult> => {
+  return async (...args: T): Promise<R> => {
+    const context = args.find((arg) => arg && typeof arg === 'object' && 'awsRequestId' in arg) as
+      | Context
+      | undefined;
+    const requestId = context?.awsRequestId || 'unknown';
+
     try {
       return await handler(...args);
     } catch (error) {
-      const requestId = args[1] ? (args[1] as { awsRequestId: string }).awsRequestId : undefined;
-      return createWebSocketErrorResponse(
-        error instanceof Error ? error : new Error(String(error)),
-        requestId
-      );
+      if (error instanceof Error) {
+        logger.error('WebSocket handler error', error, {
+          requestId,
+        });
+
+        return createWebSocketErrorResponse(error, requestId) as R;
+      }
+
+      // Errorでない例外の場合
+      logger.error('Unknown error type in WebSocket', new Error(String(error)), {
+        requestId,
+      });
+
+      // 500エラーを返す
+      return createWebSocketErrorResponse(new Error('Unknown error'), requestId) as R;
     }
   };
+}
+
+// JSON解析ヘルパー
+export function safeParseJson<T>(jsonString: string, defaultValue: T): T {
+  try {
+    if (!jsonString || jsonString.trim() === '') {
+      return defaultValue;
+    }
+    return JSON.parse(jsonString) as T;
+  } catch (error) {
+    logger.warn('Failed to parse JSON', { jsonString, error });
+    return defaultValue;
+  }
 }
 
 // バリデーションヘルパー
@@ -193,45 +248,47 @@ export function validateString(value: unknown, fieldName: string, maxLength?: nu
   return value;
 }
 
-export function validateEmail(email: string): string {
+export function validateNumber(
+  value: unknown,
+  fieldName: string,
+  min?: number,
+  max?: number
+): number {
+  const num = Number(value);
+
+  if (Number.isNaN(num)) {
+    throw new ValidationError(`${fieldName} must be a number`);
+  }
+
+  if (min !== undefined && num < min) {
+    throw new ValidationError(`${fieldName} must be at least ${min}`);
+  }
+
+  if (max !== undefined && num > max) {
+    throw new ValidationError(`${fieldName} must be at most ${max}`);
+  }
+
+  return num;
+}
+
+export function validateEmail(value: string, fieldName: string): string {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    throw new ValidationError('Invalid email format');
+
+  if (!emailRegex.test(value)) {
+    throw new ValidationError(`${fieldName} must be a valid email address`);
   }
-  return email;
+
+  return value;
 }
 
-export function validateUUID(uuid: string, fieldName: string): string {
-  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  if (!uuidRegex.test(uuid)) {
-    throw new ValidationError(`${fieldName} must be a valid UUID`);
-  }
-  return uuid;
-}
-
-// JSON パース用ヘルパー
-export function safeParseJson<T = unknown>(jsonString: string | undefined, defaultValue: T): T {
-  if (!jsonString) {
-    return defaultValue;
+export function validateEnum<T extends string>(
+  value: unknown,
+  fieldName: string,
+  allowedValues: readonly T[]
+): T {
+  if (typeof value !== 'string' || !allowedValues.includes(value as T)) {
+    throw new ValidationError(`${fieldName} must be one of: ${allowedValues.join(', ')}`);
   }
 
-  try {
-    return JSON.parse(jsonString) as T;
-  } catch (_error) {
-    throw new ValidationError('Invalid JSON format');
-  }
-}
-
-// 非同期関数用のタイムアウトラッパー
-export function withTimeout<T>(
-  promise: Promise<T>,
-  timeoutMs: number,
-  errorMessage = 'Operation timed out'
-): Promise<T> {
-  return Promise.race([
-    promise,
-    new Promise<never>((_, reject) => {
-      setTimeout(() => reject(new CommentiaError(errorMessage, 408, 'TIMEOUT')), timeoutMs);
-    }),
-  ]);
+  return value as T;
 }

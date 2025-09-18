@@ -33,7 +33,7 @@ interface QRCodeCache {
  */
 const qrCodeCache = new Map<string, QRCodeCache>();
 
-class QRService {
+export class QRService {
   private readonly defaultSize = 200;
   private readonly cacheTTLMinutes = 30;
   private readonly baseUrl = process.env.FRONTEND_URL || 'https://commentia.example.com';
@@ -112,11 +112,10 @@ class QRService {
     if (format === 'svg') {
       // SVG形式で生成
       return await QRCode.toString(url, { ...options, type: 'svg' });
-    } else {
-      // PNG形式で生成（Base64エンコード）
-      const buffer = await QRCode.toBuffer(url, { ...options, type: 'png' });
-      return `data:image/png;base64,${buffer.toString('base64')}`;
     }
+    // PNG形式で生成（Base64エンコード）
+    const buffer = await QRCode.toBuffer(url, { ...options, type: 'png' });
+    return `data:image/png;base64,${buffer.toString('base64')}`;
   }
 
   /**
@@ -192,4 +191,4 @@ class QRService {
 }
 
 // シングルトンインスタンス
-export const qrService = new QRService();
+export const qrService = process.env.NODE_ENV === 'test' ? null : new QRService();

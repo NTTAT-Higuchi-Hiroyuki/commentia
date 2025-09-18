@@ -241,6 +241,9 @@ export class LikeService {
       return newLikeCount;
     } catch (error) {
       logger.error('Failed to update comment like count', error, { commentId });
+      if (error instanceof NotFoundError) {
+        throw error;
+      }
       throw new CommentiaError('Failed to update like count', 500, 'INTERNAL_ERROR');
     }
   }
@@ -262,7 +265,10 @@ export class LikeService {
 
       return result.Item ? (result.Item as LikeItem) : null;
     } catch (error) {
-      logger.error('Failed to check existing like', error, { commentId, userId });
+      logger.error('Failed to check existing like', error, {
+        commentId,
+        userId,
+      });
       return null;
     }
   }
@@ -293,7 +299,10 @@ export class LikeService {
       if (error instanceof NotFoundError) {
         throw error;
       }
-      logger.error('Failed to validate comment exists', error, { commentId, roomId });
+      logger.error('Failed to validate comment exists', error, {
+        commentId,
+        roomId,
+      });
       throw new CommentiaError('Failed to validate comment', 500, 'INTERNAL_ERROR');
     }
   }
@@ -379,5 +388,5 @@ export class LikeService {
   }
 }
 
-// インスタンスをエクスポート
-export const likeService = new LikeService();
+// インスタンスをエクスポート（テスト環境では作成しない）
+export const likeService = process.env.NODE_ENV === 'test' ? null : new LikeService();

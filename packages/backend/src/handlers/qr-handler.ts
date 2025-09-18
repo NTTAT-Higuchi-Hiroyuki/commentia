@@ -63,7 +63,7 @@ export const generateQRCodeHandler = withErrorHandling(
     }
 
     // バリデーション: サイズ
-    if (size !== undefined && (isNaN(size) || size < 50 || size > 500)) {
+    if (size !== undefined && (Number.isNaN(size) || size < 50 || size > 500)) {
       return createApiResponse(400, {
         success: false,
         error: {
@@ -106,13 +106,12 @@ export const generateQRCodeHandler = withErrorHandling(
         headers,
         body: qrCode.qrCodeData,
       };
-    } else {
-      // PNGの場合はJSONレスポンスで返す
-      return createApiResponse(200, {
-        success: true,
-        data: response,
-      });
     }
+    // PNGの場合はJSONレスポンスで返す
+    return createApiResponse(200, {
+      success: true,
+      data: response,
+    });
   }
 );
 
