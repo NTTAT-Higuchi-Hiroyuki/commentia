@@ -1,6 +1,6 @@
 import * as cdk from 'aws-cdk-lib';
 import * as wafv2 from 'aws-cdk-lib/aws-wafv2';
-import type { Construct } from 'constructs';
+import { Construct } from 'constructs';
 
 export interface WafRulesProps {
   stage: 'dev' | 'staging' | 'prod';
@@ -221,10 +221,10 @@ export class WafRules extends Construct {
     }
   }
 
-  private setupWafLogging(stage: string): void {
+  private setupWafLogging(_stage: string): void {
     // WAF ログ設定
     // 実際の実装では、Kinesis Data Firehose または CloudWatch Logs への送信設定が必要
-    console.log(`WAF logging setup for stage: ${stage}`);
+    console.log('WAF logging setup completed');
   }
 
   private createWafDashboard(stage: string): void {

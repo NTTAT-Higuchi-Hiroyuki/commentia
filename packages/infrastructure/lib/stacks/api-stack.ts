@@ -3,7 +3,9 @@ import * as apigateway from 'aws-cdk-lib/aws-apigateway';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import type { Construct } from 'constructs';
+import { EnhancedMonitoring } from '../constructs/enhanced-monitoring';
 import { LambdaFunction } from '../constructs/lambda-function';
+import { LogInsightsQueries } from '../constructs/log-insights-queries';
 import type { TablesConfig } from './database-stack';
 
 export interface ApiStackProps extends cdk.StackProps {
@@ -11,12 +13,16 @@ export interface ApiStackProps extends cdk.StackProps {
   tablesConfig: TablesConfig;
   customDomainName?: string;
   certificateArn?: string;
+  notificationEmail?: string;
 }
 
 export class ApiStack extends cdk.Stack {
   public readonly apiEndpoint: string;
   public readonly api: apigateway.RestApi;
   public readonly customDomain?: apigateway.DomainName;
+  public readonly lambdaFunctions: { [key: string]: LambdaFunction };
+  public readonly monitoring: EnhancedMonitoring;
+  public readonly logInsightsQueries: LogInsightsQueries;
   private readonly requestValidator: apigateway.RequestValidator;
 
   constructor(scope: Construct, id: string, props: ApiStackProps) {
@@ -105,10 +111,10 @@ export class ApiStack extends cdk.Stack {
     const throttleBurstLimit = this.getBurstLimit(props.stage);
 
     // Lambda関数の設定
-    const lambdaFunctions = this.createLambdaFunctions(props);
+    this.lambdaFunctions = this.createLambdaFunctions(props);
 
     // API エンドポイントの設定
-    this.setupApiEndpoints(lambdaFunctions);
+    this.setupApiEndpoints(this.lambdaFunctions);
 
     // デプロイ後にスロットリング設定を適用
     const defaultMethodOptions: apigateway.MethodOptions = {
@@ -140,6 +146,26 @@ export class ApiStack extends cdk.Stack {
 
     // API エンドポイント URL の設定
     this.apiEndpoint = this.customDomain ? `https://${this.customDomain.domainName}` : this.api.url;
+
+    // Enhanced Monitoring Setup
+    this.monitoring = new EnhancedMonitoring(this, 'EnhancedMonitoring', {
+      stage: props.stage,
+      lambdaFunctions: Object.values(this.lambdaFunctions).map((lf) => lf.function),
+      restApi: this.api,
+      tables: [
+        props.tablesConfig.roomsTable,
+        props.tablesConfig.commentsTable,
+        props.tablesConfig.connectionsTable,
+        props.tablesConfig.likesTable,
+      ],
+      notificationEmail: props.notificationEmail,
+    });
+
+    // Log Insights Queries Setup
+    this.logInsightsQueries = new LogInsightsQueries(this, 'LogInsightsQueries', {
+      stage: props.stage,
+      lambdaFunctions: Object.values(this.lambdaFunctions).map((lf) => lf.function.functionName),
+    });
 
     // CloudFormation Outputs
     this.createOutputs(props.stage);
@@ -197,7 +223,9 @@ export class ApiStack extends cdk.Stack {
     }
   }
 
-  private createLambdaFunctions(props: ApiStackProps) {
+  private createLambdaFunctions(props: ApiStackProps): {
+    [key: string]: LambdaFunction;
+  } {
     const commonLambdaProps = {
       stage: props.stage,
       tables: [
@@ -206,6 +234,11 @@ export class ApiStack extends cdk.Stack {
         props.tablesConfig.connectionsTable,
         props.tablesConfig.likesTable,
       ],
+      // Enable metrics for monitoring
+      environment: {
+        ENABLE_METRICS: 'true',
+        METRICS_NAMESPACE: 'Commentia',
+      },
     };
 
     // Comment管理Lambda
@@ -492,5 +525,24 @@ export class ApiStack extends cdk.Stack {
         exportName: `Commentia-Custom-Domain-${stage}`,
       });
     }
+
+    // Monitoring Outputs
+    new cdk.CfnOutput(this, 'OperationalDashboardUrl', {
+      value: `https://${this.region}.console.aws.amazon.com/cloudwatch/home?region=${this.region}#dashboards:name=${this.monitoring.operationalDashboard.dashboardName}`,
+      description: 'Operational Dashboard URL',
+      exportName: `Commentia-Operations-Dashboard-${stage}`,
+    });
+
+    new cdk.CfnOutput(this, 'BusinessDashboardUrl', {
+      value: `https://${this.region}.console.aws.amazon.com/cloudwatch/home?region=${this.region}#dashboards:name=${this.monitoring.businessDashboard.dashboardName}`,
+      description: 'Business Dashboard URL',
+      exportName: `Commentia-Business-Dashboard-${stage}`,
+    });
+
+    new cdk.CfnOutput(this, 'LogInsightsUrl', {
+      value: `https://${this.region}.console.aws.amazon.com/cloudwatch/home?region=${this.region}#logsV2:logs-insights`,
+      description: 'CloudWatch Logs Insights URL',
+      exportName: `Commentia-Log-Insights-${stage}`,
+    });
   }
 }
