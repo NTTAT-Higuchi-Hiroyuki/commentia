@@ -78,10 +78,13 @@ export const generateQRCodeHandler = withErrorHandling(
     const request: GenerateQRCodeRequest = {
       roomId,
       format,
-      size,
+      ...(size !== undefined && { size }),
     };
 
     // QRコード生成
+    if (!qrService) {
+      throw new Error('QR service not available');
+    }
     const qrCode = await qrService.generateQRCode(request);
 
     const response: GenerateQRCodeResponse = qrCode;
@@ -129,6 +132,9 @@ export const getQRCacheStatsHandler = withErrorHandling(
     logger.info('QR cache stats requested');
 
     // キャッシュ統計取得
+    if (!qrService) {
+      throw new Error('QR service not available');
+    }
     const stats = qrService.getCacheStats();
 
     logger.info('QR cache stats retrieved', stats);
@@ -154,6 +160,9 @@ export const clearQRCacheHandler = withErrorHandling(
     logger.info('QR cache clear requested');
 
     // キャッシュクリア
+    if (!qrService) {
+      throw new Error('QR service not available');
+    }
     qrService.clearCache();
 
     logger.info('QR cache cleared successfully');

@@ -57,6 +57,9 @@ const addLikeHandler = withErrorHandling(
     };
 
     // いいね追加
+    if (!likeService) {
+      throw new Error('Like service not available');
+    }
     const result = await likeService.addLike(addRequest);
 
     const response: AddLikeResponse = {
@@ -93,7 +96,9 @@ const removeLikeHandler = withErrorHandling(
     );
 
     // リクエストボディから userId を取得
-    const requestBody = safeParseJson<{ userId: string }>(event.body || '', { userId: '' });
+    const requestBody = safeParseJson<{ userId: string }>(event.body || '', {
+      userId: '',
+    });
     const userId = validateRequired(validateString(requestBody.userId, 'userId', 100), 'userId');
 
     logger.info('Removing like', { commentId, userId });
@@ -104,6 +109,9 @@ const removeLikeHandler = withErrorHandling(
     };
 
     // いいね取消
+    if (!likeService) {
+      throw new Error('Like service not available');
+    }
     const result = await likeService.removeLike(removeRequest);
 
     const response: RemoveLikeResponse = {

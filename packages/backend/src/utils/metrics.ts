@@ -4,7 +4,7 @@ import { logger } from './logger.js';
 interface MetricData {
   metricName: string;
   value: number;
-  unit?: 'Count' | 'Seconds' | 'Milliseconds' | 'Percent' | 'Bytes' | 'Rate';
+  unit?: 'Count' | 'Seconds' | 'Milliseconds' | 'Percent' | 'Bytes' | 'Count/Second';
   dimensions?: Record<string, string>;
   timestamp?: Date;
 }
@@ -199,7 +199,7 @@ class MetricsCollector {
   /**
    * ビジネスメトリクス: ユーザー参加
    */
-  async recordUserJoined(roomId: string, userId: string, userName: string): Promise<void> {
+  async recordUserJoined(roomId: string, userId: string, _userName: string): Promise<void> {
     const metrics: MetricData[] = [
       {
         metricName: 'UserJoined',
@@ -663,7 +663,7 @@ class MetricsCollector {
     await this.putMetric({
       metricName,
       value,
-      unit,
+      unit: unit || 'Count',
       dimensions: {
         Stage: this.stage,
         ...dimensions,

@@ -35,6 +35,9 @@ const connectHandler = withWebSocketErrorHandling(
     logger.info('WebSocket connection request', { connectionId });
 
     // 接続処理
+    if (!webSocketService) {
+      throw new Error('WebSocket service not available');
+    }
     await webSocketService.handleConnect(connectionId);
 
     logger.info('WebSocket connection established', { connectionId });
@@ -61,6 +64,9 @@ const disconnectHandler = withWebSocketErrorHandling(
     logger.info('WebSocket disconnection request', { connectionId });
 
     // 切断処理
+    if (!webSocketService) {
+      throw new Error('WebSocket service not available');
+    }
     await webSocketService.handleDisconnect(connectionId);
 
     logger.info('WebSocket disconnection completed', { connectionId });
@@ -121,6 +127,9 @@ const joinRoomHandler = withWebSocketErrorHandling(
     };
 
     // ルーム参加処理
+    if (!webSocketService) {
+      throw new Error('WebSocket service not available');
+    }
     await webSocketService.joinRoom(connectionId, joinRequest);
 
     logger.info('Successfully joined room', {
@@ -170,10 +179,15 @@ const leaveRoomHandler = withWebSocketErrorHandling(
     }
 
     // 接続情報を取得してルーム退出処理
+    if (!webSocketService) {
+      throw new Error('WebSocket service not available');
+    }
     const connection = await webSocketService.getConnection(connectionId);
 
     if (!connection || !connection.roomId || !connection.userName) {
-      logger.warn('No active room connection found for leave request', { connectionId });
+      logger.warn('No active room connection found for leave request', {
+        connectionId,
+      });
       return createWebSocketResponse(400, {
         error: 'VALIDATION_ERROR',
         message: 'No active room connection found',

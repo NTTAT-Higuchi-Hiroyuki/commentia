@@ -67,6 +67,9 @@ export const postCommentHandler = withErrorHandling(
     };
 
     // コメント投稿
+    if (!commentService) {
+      throw new Error('Comment service not available');
+    }
     const comment = await commentService.postComment(postRequest);
 
     const response: PostCommentResponse = {
@@ -110,10 +113,14 @@ export const getCommentsHandler = withErrorHandling(
     logger.info('Getting comments', { roomId, sortBy, limit });
 
     // コメント一覧取得
+    if (!commentService) {
+      throw new Error('Comment service not available');
+    }
     const result = await commentService.getComments(roomId, sortBy, limit, cursor);
 
     const response: GetCommentsResponse = {
       comments: result.comments,
+      hasMore: !!result.nextCursor,
       ...(result.nextCursor && { nextCursor: result.nextCursor }),
     };
 
@@ -139,12 +146,17 @@ export const deleteCommentHandler = withErrorHandling(
     );
 
     // リクエストボディから userId を取得
-    const requestBody = safeParseJson<{ userId: string }>(event.body || '', { userId: '' });
+    const requestBody = safeParseJson<{ userId: string }>(event.body || '', {
+      userId: '',
+    });
     const userId = validateRequired(validateString(requestBody.userId, 'userId', 100), 'userId');
 
     logger.info('Deleting comment', { commentId, userId });
 
     // コメント削除
+    if (!commentService) {
+      throw new Error('Comment service not available');
+    }
     await commentService.deleteComment(commentId, userId);
 
     const response = {

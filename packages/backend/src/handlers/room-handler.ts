@@ -37,6 +37,9 @@ export const createRoomHandler = withErrorHandling(
     const hostId = validateRequired(validateString(requestBody.hostId, 'hostId', 100), 'hostId');
 
     // ルーム作成
+    if (!roomService) {
+      throw new Error('Room service not available');
+    }
     const room = await roomService.createRoom(hostId, requestBody.settings);
 
     const response: CreateRoomResponse = {
@@ -74,6 +77,9 @@ export const getRoomHandler = withErrorHandling(
     logger.info('Getting room', { roomId });
 
     // ルーム取得
+    if (!roomService) {
+      throw new Error('Room service not available');
+    }
     const room = await roomService.getRoom(roomId);
 
     const response = {
@@ -104,12 +110,17 @@ export const closeRoomHandler = withErrorHandling(
     );
 
     // リクエストボディから hostId を取得
-    const requestBody = safeParseJson<{ hostId: string }>(event.body || '', { hostId: '' });
+    const requestBody = safeParseJson<{ hostId: string }>(event.body || '', {
+      hostId: '',
+    });
     const hostId = validateRequired(validateString(requestBody.hostId, 'hostId', 100), 'hostId');
 
     logger.info('Closing room', { roomId, hostId });
 
     // ルーム終了
+    if (!roomService) {
+      throw new Error('Room service not available');
+    }
     await roomService.closeRoom(roomId, hostId);
 
     const response = {
@@ -142,6 +153,9 @@ export const getRoomByCodeHandler = withErrorHandling(
     logger.info('Finding room by code', { roomCode });
 
     // ルーム検索
+    if (!roomService) {
+      throw new Error('Room service not available');
+    }
     const room = await roomService.getRoomByCode(roomCode);
 
     const response = {
