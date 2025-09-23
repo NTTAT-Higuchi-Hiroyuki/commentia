@@ -1,5 +1,11 @@
 import type { ReactNode } from 'react';
 
+// Generate unique IDs for skeleton components
+const generateId = (() => {
+  let counter = 0;
+  return () => `skeleton-${++counter}-${Date.now()}`;
+})();
+
 interface SkeletonProps {
   className?: string;
   children?: ReactNode;
@@ -7,13 +13,9 @@ interface SkeletonProps {
 
 export const Skeleton = ({ className = '', children }: SkeletonProps) => {
   return (
-    <div
-      className={`animate-pulse bg-gray-200 rounded ${className}`}
-      role="status"
-      aria-label="読み込み中"
-    >
+    <output className={`animate-pulse bg-gray-200 rounded ${className}`} aria-label="読み込み中">
       {children}
-    </div>
+    </output>
   );
 };
 
@@ -32,7 +34,7 @@ export const SkeletonText = ({
     <div className={`space-y-2 ${className}`}>
       {Array.from({ length: lines }).map((_, index) => (
         <Skeleton
-          key={`text-line-${index}`}
+          key={generateId()}
           className={`${lineHeight} ${index === lines - 1 && lines > 1 ? 'w-3/4' : 'w-full'}`}
         />
       ))}
@@ -98,20 +100,20 @@ export const SkeletonTable = ({
     <div className={`space-y-3 ${className}`}>
       {/* Header */}
       <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}>
-        {Array.from({ length: columns }).map((_, index) => (
-          <Skeleton key={`table-header-${index}`} className="h-4" />
+        {Array.from({ length: columns }).map(() => (
+          <Skeleton key={generateId()} className="h-4" />
         ))}
       </div>
 
       {/* Rows */}
-      {Array.from({ length: rows }).map((_, rowIndex) => (
+      {Array.from({ length: rows }).map(() => (
         <div
-          key={`table-row-${rowIndex}`}
+          key={generateId()}
           className="grid gap-4"
           style={{ gridTemplateColumns: `repeat(${columns}, 1fr)` }}
         >
-          {Array.from({ length: columns }).map((_, colIndex) => (
-            <Skeleton key={`table-cell-${rowIndex}-${colIndex}`} className="h-3" />
+          {Array.from({ length: columns }).map(() => (
+            <Skeleton key={generateId()} className="h-3" />
           ))}
         </div>
       ))}
@@ -124,8 +126,8 @@ export const SkeletonTable = ({
 export const CommentListSkeleton = ({ count = 3 }: { count?: number }) => {
   return (
     <div className="space-y-4">
-      {Array.from({ length: count }).map((_, index) => (
-        <SkeletonCard key={`comment-${index}`} showAvatar textLines={2} className="bg-white" />
+      {Array.from({ length: count }).map(() => (
+        <SkeletonCard key={generateId()} showAvatar textLines={2} className="bg-white" />
       ))}
     </div>
   );
@@ -139,8 +141,8 @@ export const ParticipantListSkeleton = ({ count = 5 }: { count?: number }) => {
         <Skeleton className="w-8 h-4 rounded-full" />
       </div>
 
-      {Array.from({ length: count }).map((_, index) => (
-        <div key={`participant-${index}`} className="flex items-center space-x-3">
+      {Array.from({ length: count }).map(() => (
+        <div key={generateId()} className="flex items-center space-x-3">
           <SkeletonAvatar size="w-8 h-8" />
           <div className="flex-1">
             <SkeletonText lines={1} className="w-24 mb-1" lineHeight="h-3" />
@@ -191,8 +193,8 @@ export const FormSkeleton = ({
 }) => {
   return (
     <div className={`space-y-4 ${className}`}>
-      {Array.from({ length: fields }).map((_, index) => (
-        <div key={`form-field-${index}`} className="space-y-2">
+      {Array.from({ length: fields }).map(() => (
+        <div key={generateId()} className="space-y-2">
           <SkeletonText lines={1} className="w-24" lineHeight="h-4" />
           <Skeleton className="w-full h-10 rounded-md" />
         </div>

@@ -230,9 +230,8 @@ export const SuccessDisplay = ({
   const sizeStyles = getSizeStyles(size);
 
   return (
-    <div
+    <output
       className={`rounded-lg border bg-green-50 border-green-200 ${sizeStyles.container} ${className}`}
-      role="status"
       aria-live="polite"
     >
       <div className="text-center">
@@ -244,7 +243,7 @@ export const SuccessDisplay = ({
 
         {children}
       </div>
-    </div>
+    </output>
   );
 };
 

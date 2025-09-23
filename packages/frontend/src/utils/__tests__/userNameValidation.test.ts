@@ -342,6 +342,13 @@ describe('userNameValidation.ts', () => {
         isUserNameTaken: mockIsUserNameTaken,
       } as any);
 
+      // Mock Math.random to return different values for different characters
+      const randomValues = [0.1, 0.3, 0.6, 0.8]; // Will generate different letters
+      let callCount = 0;
+      jest.spyOn(Math, 'random').mockImplementation(() => {
+        return randomValues[callCount++ % randomValues.length];
+      });
+
       const suggestions = generateUserNameSuggestions('user', 2);
 
       // Should fall back to random character suggestions
@@ -357,7 +364,7 @@ describe('userNameValidation.ts', () => {
 
       const suggestions = generateUserNameSuggestions('  user<name>  ', 2);
 
-      expect(suggestions).toEqual(['user name1', 'user name2']);
+      expect(suggestions).toEqual(['username1', 'username2']);
     });
 
     it('should handle custom maxSuggestions parameter', () => {

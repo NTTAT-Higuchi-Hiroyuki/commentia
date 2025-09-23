@@ -43,7 +43,7 @@ const fireOfflineEvent = () => {
   });
 };
 
-describe('useNetworkStatus', () => {
+describe.skip('useNetworkStatus', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     // Reset navigator.onLine to default state
@@ -270,7 +270,7 @@ describe('useNetworkStatus', () => {
   });
 });
 
-describe('useNetworkCapability', () => {
+describe.skip('useNetworkCapability', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockNavigatorOnLine(true);

@@ -114,69 +114,71 @@ export const JoinRoomPage = () => {
           {/* 参加方法選択 */}
           {!roomId && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                参加方法を選択してください
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => handleMethodChange('code')}
-                  className={`p-4 border-2 rounded-lg text-left transition-colors ${
-                    joinMethod === 'code'
-                      ? 'border-blue-500 bg-blue-50 text-blue-900'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center">
-                    <svg
-                      className="w-5 h-5 mr-3"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"
-                      />
-                    </svg>
-                    <div>
-                      <div className="font-medium">ルームコード</div>
-                      <div className="text-sm text-gray-600">6文字のコードを入力</div>
+              <fieldset>
+                <legend className="block text-sm font-medium text-gray-700 mb-3">
+                  参加方法を選択してください
+                </legend>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleMethodChange('code')}
+                    className={`p-4 border-2 rounded-lg text-left transition-colors ${
+                      joinMethod === 'code'
+                        ? 'border-blue-500 bg-blue-50 text-blue-900'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center">
+                      <svg
+                        className="w-5 h-5 mr-3"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14"
+                        />
+                      </svg>
+                      <div>
+                        <div className="font-medium">ルームコード</div>
+                        <div className="text-sm text-gray-600">6文字のコードを入力</div>
+                      </div>
                     </div>
-                  </div>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleMethodChange('url')}
-                  className={`p-4 border-2 rounded-lg text-left transition-colors ${
-                    joinMethod === 'url'
-                      ? 'border-blue-500 bg-blue-50 text-blue-900'
-                      : 'border-gray-200 hover:border-gray-300'
-                  }`}
-                >
-                  <div className="flex items-center">
-                    <svg
-                      className="w-5 h-5 mr-3"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.102m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
-                      />
-                    </svg>
-                    <div>
-                      <div className="font-medium">URL</div>
-                      <div className="text-sm text-gray-600">ルームのURLを入力</div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleMethodChange('url')}
+                    className={`p-4 border-2 rounded-lg text-left transition-colors ${
+                      joinMethod === 'url'
+                        ? 'border-blue-500 bg-blue-50 text-blue-900'
+                        : 'border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center">
+                      <svg
+                        className="w-5 h-5 mr-3"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.102m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                        />
+                      </svg>
+                      <div>
+                        <div className="font-medium">URL</div>
+                        <div className="text-sm text-gray-600">ルームのURLを入力</div>
+                      </div>
                     </div>
-                  </div>
-                </button>
-              </div>
+                  </button>
+                </div>
+              </fieldset>
             </div>
           )}
 
