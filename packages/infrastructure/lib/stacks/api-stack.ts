@@ -107,8 +107,8 @@ export class ApiStack extends cdk.Stack {
     });
 
     // スロットリング設定をCarbon後に追加
-    const throttleRateLimit = this.getRateLimit(props.stage);
-    const throttleBurstLimit = this.getBurstLimit(props.stage);
+    const _throttleRateLimit = this.getRateLimit(props.stage);
+    const _throttleBurstLimit = this.getBurstLimit(props.stage);
 
     // Lambda関数の設定
     this.lambdaFunctions = this.createLambdaFunctions(props);
@@ -116,13 +116,8 @@ export class ApiStack extends cdk.Stack {
     // API エンドポイントの設定
     this.setupApiEndpoints(this.lambdaFunctions);
 
-    // デプロイ後にスロットリング設定を適用
-    const defaultMethodOptions: apigateway.MethodOptions = {
-      throttling: {
-        rateLimit: throttleRateLimit,
-        burstLimit: throttleBurstLimit,
-      },
-    };
+    // Note: API Gateway throttling is configured at the usage plan level
+    // Individual method throttling is available via usage plans
 
     // リクエストバリデーター
     this.requestValidator = new apigateway.RequestValidator(this, 'RequestValidator', {

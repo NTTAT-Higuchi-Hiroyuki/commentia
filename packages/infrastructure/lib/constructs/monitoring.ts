@@ -42,17 +42,17 @@ export class Monitoring extends Construct {
       dashboardName: `Commentia-${props.stage}`,
       widgets: [
         // API Gateway metrics
-        [this.createApiGatewayWidget(props.restApi, props.stage)],
+        [this.createApiGatewayWidget(props.restApi, props.stage) as cloudwatch.IWidget],
         // Lambda metrics
-        [this.createLambdaWidget(props.lambdaFunctions, props.stage)],
+        [this.createLambdaWidget(props.lambdaFunctions, props.stage) as cloudwatch.IWidget],
         // DynamoDB metrics
-        [this.createDynamoDBWidget(props.tables, props.stage)],
+        [this.createDynamoDBWidget(props.tables, props.stage) as cloudwatch.IWidget],
         // CloudFront metrics (if exists)
         ...(props.distribution
-          ? [[this.createCloudFrontWidget(props.distribution, props.stage)]]
+          ? [[this.createCloudFrontWidget(props.distribution, props.stage) as cloudwatch.IWidget]]
           : []),
         // Application-specific metrics
-        [this.createApplicationMetricsWidget(props.stage)],
+        [this.createApplicationMetricsWidget(props.stage) as cloudwatch.IWidget],
       ],
     });
 
@@ -69,7 +69,7 @@ export class Monitoring extends Construct {
     this.createApplicationAlarms(props.stage);
   }
 
-  private createApiGatewayWidget(api: apigateway.RestApi, stage: string): cloudwatch.GraphWidget {
+  private createApiGatewayWidget(api: apigateway.RestApi, _stage: string): cloudwatch.GraphWidget {
     return new cloudwatch.GraphWidget({
       title: 'API Gateway Metrics',
       left: [
@@ -116,7 +116,7 @@ export class Monitoring extends Construct {
     });
   }
 
-  private createLambdaWidget(functions: lambda.Function[], stage: string): cloudwatch.GraphWidget {
+  private createLambdaWidget(functions: lambda.Function[], _stage: string): cloudwatch.GraphWidget {
     const durationMetrics = functions.map(
       (fn) =>
         new cloudwatch.Metric({
@@ -148,7 +148,7 @@ export class Monitoring extends Construct {
     });
   }
 
-  private createDynamoDBWidget(tables: dynamodb.Table[], stage: string): cloudwatch.GraphWidget {
+  private createDynamoDBWidget(tables: dynamodb.Table[], _stage: string): cloudwatch.GraphWidget {
     const readMetrics = tables.map(
       (table) =>
         new cloudwatch.Metric({
@@ -182,7 +182,7 @@ export class Monitoring extends Construct {
 
   private createCloudFrontWidget(
     distribution: cloudfront.Distribution,
-    stage: string
+    _stage: string
   ): cloudwatch.GraphWidget {
     return new cloudwatch.GraphWidget({
       title: 'CloudFront Metrics',
@@ -223,7 +223,7 @@ export class Monitoring extends Construct {
     });
   }
 
-  private createApplicationMetricsWidget(stage: string): cloudwatch.GraphWidget {
+  private createApplicationMetricsWidget(_stage: string): cloudwatch.GraphWidget {
     return new cloudwatch.GraphWidget({
       title: 'Application Metrics',
       left: [

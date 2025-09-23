@@ -309,7 +309,7 @@ export class FrontendStack extends cdk.Stack {
    * フロントエンド用の環境設定ファイルを生成
    */
   private createEnvironmentConfig(props: FrontendStackProps): void {
-    const envConfig = {
+    const _envConfig = {
       VITE_API_ENDPOINT: props.apiEndpoint,
       VITE_WEBSOCKET_ENDPOINT: props.webSocketEndpoint,
       VITE_STAGE: props.stage,

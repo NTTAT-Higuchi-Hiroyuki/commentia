@@ -143,7 +143,7 @@ class CommentiaDeployer {
         },
       });
       console.log('✅ CDK bootstrapped successfully');
-    } catch (error) {
+    } catch (_error) {
       // Bootstrap エラーは既存環境では無視
       console.log('⚠️ Bootstrap may have already been run');
     }
@@ -163,7 +163,7 @@ class CommentiaDeployer {
         },
       });
       console.log(stdout);
-    } catch (error) {
+    } catch (_error) {
       console.log('No changes detected or diff command failed');
     }
   }
@@ -261,7 +261,7 @@ class CommentiaDeployer {
 
     try {
       // CDK Output の取得
-      const { stdout } = await execAsync('npx cdk list --json', {
+      const { stdout: _stdout } = await execAsync('npx cdk list --json', {
         cwd: process.cwd(),
         env: {
           ...process.env,
@@ -351,11 +351,12 @@ function parseArgs(): DeploymentConfig {
       case '--dry-run':
         config.dryRun = true;
         break;
-      case '--destroy':
+      case '--destroy': {
         // 破棄モード
         const deployer = new CommentiaDeployer(config);
         deployer.destroy().catch(console.error);
         return config; // 早期リターン
+      }
       case '--help':
         printHelp();
         process.exit(0);

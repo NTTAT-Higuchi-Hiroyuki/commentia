@@ -76,27 +76,41 @@ export class EnhancedMonitoring extends Construct {
       dashboardName: `Commentia-Operations-${props.stage}`,
       widgets: [
         // System Health Overview
-        [this.createSystemHealthWidget(props)],
+        [this.createSystemHealthWidget(props) as cloudwatch.IWidget],
 
         // API Gateway Performance
-        [this.createApiPerformanceWidget(props.restApi, props.stage)],
+        [this.createApiPerformanceWidget(props.restApi, props.stage) as cloudwatch.IWidget],
 
         // Lambda Performance Grid
-        [this.createLambdaPerformanceWidget(props.lambdaFunctions, props.stage)],
+        [
+          this.createLambdaPerformanceWidget(
+            props.lambdaFunctions,
+            props.stage
+          ) as cloudwatch.IWidget,
+        ],
 
         // Database Performance
-        [this.createDatabasePerformanceWidget(props.tables, props.stage)],
+        [this.createDatabasePerformanceWidget(props.tables, props.stage) as cloudwatch.IWidget],
 
         // WebSocket Performance (if exists)
         ...(props.webSocketApi
-          ? [[this.createWebSocketPerformanceWidget(props.webSocketApi, props.stage)]]
+          ? [
+              [
+                this.createWebSocketPerformanceWidget(
+                  props.webSocketApi,
+                  props.stage
+                ) as cloudwatch.IWidget,
+              ],
+            ]
           : []),
 
         // Error Analysis
-        [this.createErrorAnalysisWidget(props)],
+        [this.createErrorAnalysisWidget(props) as cloudwatch.IWidget],
 
         // Infrastructure Costs (for production)
-        ...(props.stage === 'prod' ? [[this.createCostAnalysisWidget(props.stage)]] : []),
+        ...(props.stage === 'prod'
+          ? [[this.createCostAnalysisWidget(props.stage) as cloudwatch.IWidget]]
+          : []),
       ],
     });
   }
@@ -106,22 +120,24 @@ export class EnhancedMonitoring extends Construct {
       dashboardName: `Commentia-Business-${props.stage}`,
       widgets: [
         // Key Business Metrics
-        [this.createBusinessMetricsWidget(props.stage)],
+        [this.createBusinessMetricsWidget(props.stage) as cloudwatch.IWidget],
 
         // User Engagement
-        [this.createUserEngagementWidget(props.stage)],
+        [this.createUserEngagementWidget(props.stage) as cloudwatch.IWidget],
 
         // Room Activity
-        [this.createRoomActivityWidget(props.stage)],
+        [this.createRoomActivityWidget(props.stage) as cloudwatch.IWidget],
 
         // Content Metrics
-        [this.createContentMetricsWidget(props.stage)],
+        [this.createContentMetricsWidget(props.stage) as cloudwatch.IWidget],
 
         // Real-time Activity
-        [this.createRealTimeActivityWidget(props.stage)],
+        [this.createRealTimeActivityWidget(props.stage) as cloudwatch.IWidget],
 
         // Growth Metrics (for production)
-        ...(props.stage === 'prod' ? [[this.createGrowthMetricsWidget(props.stage)]] : []),
+        ...(props.stage === 'prod'
+          ? [[this.createGrowthMetricsWidget(props.stage) as cloudwatch.IWidget]]
+          : []),
       ],
     });
   }
@@ -188,7 +204,7 @@ export class EnhancedMonitoring extends Construct {
 
   private createApiPerformanceWidget(
     api: apigateway.RestApi,
-    stage: string
+    _stage: string
   ): cloudwatch.GraphWidget {
     return new cloudwatch.GraphWidget({
       title: 'API Gateway Performance',
@@ -231,7 +247,7 @@ export class EnhancedMonitoring extends Construct {
 
   private createLambdaPerformanceWidget(
     functions: lambda.Function[],
-    stage: string
+    _stage: string
   ): cloudwatch.GraphWidget {
     const invocationMetrics = functions.map(
       (fn) =>
@@ -266,7 +282,7 @@ export class EnhancedMonitoring extends Construct {
 
   private createDatabasePerformanceWidget(
     tables: dynamodb.Table[],
-    stage: string
+    _stage: string
   ): cloudwatch.GraphWidget {
     const readMetrics = tables.map(
       (table) =>
@@ -301,7 +317,7 @@ export class EnhancedMonitoring extends Construct {
 
   private createWebSocketPerformanceWidget(
     webSocketApi: apigatewayv2.WebSocketApi,
-    stage: string
+    _stage: string
   ): cloudwatch.GraphWidget {
     return new cloudwatch.GraphWidget({
       title: 'WebSocket Performance',
@@ -378,7 +394,7 @@ export class EnhancedMonitoring extends Construct {
     });
   }
 
-  private createBusinessMetricsWidget(stage: string): cloudwatch.GraphWidget {
+  private createBusinessMetricsWidget(_stage: string): cloudwatch.GraphWidget {
     return new cloudwatch.GraphWidget({
       title: 'Key Business Metrics',
       left: [
@@ -414,7 +430,7 @@ export class EnhancedMonitoring extends Construct {
     });
   }
 
-  private createUserEngagementWidget(stage: string): cloudwatch.GraphWidget {
+  private createUserEngagementWidget(_stage: string): cloudwatch.GraphWidget {
     return new cloudwatch.GraphWidget({
       title: 'User Engagement',
       left: [
@@ -450,7 +466,7 @@ export class EnhancedMonitoring extends Construct {
     });
   }
 
-  private createRoomActivityWidget(stage: string): cloudwatch.GraphWidget {
+  private createRoomActivityWidget(_stage: string): cloudwatch.GraphWidget {
     return new cloudwatch.GraphWidget({
       title: 'Room Activity',
       left: [
@@ -486,7 +502,7 @@ export class EnhancedMonitoring extends Construct {
     });
   }
 
-  private createContentMetricsWidget(stage: string): cloudwatch.GraphWidget {
+  private createContentMetricsWidget(_stage: string): cloudwatch.GraphWidget {
     return new cloudwatch.GraphWidget({
       title: 'Content Metrics',
       left: [
@@ -522,7 +538,7 @@ export class EnhancedMonitoring extends Construct {
     });
   }
 
-  private createRealTimeActivityWidget(stage: string): cloudwatch.GraphWidget {
+  private createRealTimeActivityWidget(_stage: string): cloudwatch.GraphWidget {
     return new cloudwatch.GraphWidget({
       title: 'Real-time Activity',
       left: [
@@ -559,7 +575,7 @@ export class EnhancedMonitoring extends Construct {
     });
   }
 
-  private createCostAnalysisWidget(stage: string): cloudwatch.GraphWidget {
+  private createCostAnalysisWidget(_stage: string): cloudwatch.GraphWidget {
     return new cloudwatch.GraphWidget({
       title: 'Infrastructure Costs (Estimated)',
       left: [
@@ -599,7 +615,7 @@ export class EnhancedMonitoring extends Construct {
     });
   }
 
-  private createGrowthMetricsWidget(stage: string): cloudwatch.GraphWidget {
+  private createGrowthMetricsWidget(_stage: string): cloudwatch.GraphWidget {
     return new cloudwatch.GraphWidget({
       title: 'Growth Metrics',
       left: [
@@ -642,12 +658,8 @@ export class EnhancedMonitoring extends Construct {
     queries.push(
       new logs.QueryDefinition(this, 'ErrorAnalysisQuery', {
         queryDefinitionName: `commentia-error-analysis-${props.stage}`,
-        queryString: `
-fields @timestamp, level, message, errorName, errorMessage, errorStack, requestId, userId, roomId
-| filter level = "ERROR"
-| sort @timestamp desc
-| limit 100
-      `,
+        queryString:
+          'fields @timestamp, level, message, errorName, errorMessage, errorStack, requestId, userId, roomId | filter level = "ERROR" | sort @timestamp desc | limit 100' as logs.QueryString,
         logGroups: props.lambdaFunctions.map((fn) =>
           logs.LogGroup.fromLogGroupName(
             this,
@@ -662,12 +674,8 @@ fields @timestamp, level, message, errorName, errorMessage, errorStack, requestI
     queries.push(
       new logs.QueryDefinition(this, 'PerformanceAnalysisQuery', {
         queryDefinitionName: `commentia-performance-analysis-${props.stage}`,
-        queryString: `
-fields @timestamp, @duration, @requestId, action, duration_ms
-| filter @type = "REPORT"
-| stats avg(@duration), max(@duration), min(@duration) by bin(5m)
-| sort @timestamp desc
-      `,
+        queryString:
+          'fields @timestamp, @duration, @requestId, action, duration_ms | filter @type = "REPORT" | stats avg(@duration), max(@duration), min(@duration) by bin(5m) | sort @timestamp desc' as logs.QueryString,
         logGroups: props.lambdaFunctions.map((fn) =>
           logs.LogGroup.fromLogGroupName(
             this,
@@ -682,12 +690,8 @@ fields @timestamp, @duration, @requestId, action, duration_ms
     queries.push(
       new logs.QueryDefinition(this, 'UserActivityQuery', {
         queryDefinitionName: `commentia-user-activity-${props.stage}`,
-        queryString: `
-fields @timestamp, userId, userName, roomId, action, message
-| filter action in ["user_joined", "user_left", "comment_posted", "like_added"]
-| stats count() by userId, action
-| sort @timestamp desc
-      `,
+        queryString:
+          'fields @timestamp, userId, userName, roomId, action, message | filter action in ["user_joined", "user_left", "comment_posted", "like_added"] | stats count() by userId, action | sort @timestamp desc' as logs.QueryString,
         logGroups: props.lambdaFunctions.map((fn) =>
           logs.LogGroup.fromLogGroupName(
             this,
@@ -702,12 +706,8 @@ fields @timestamp, userId, userName, roomId, action, message
     queries.push(
       new logs.QueryDefinition(this, 'WebSocketAnalysisQuery', {
         queryDefinitionName: `commentia-websocket-analysis-${props.stage}`,
-        queryString: `
-fields @timestamp, connectionId, roomId, action, message
-| filter connectionId like /^[A-Za-z0-9_-]+$/
-| stats count() by action, roomId
-| sort @timestamp desc
-      `,
+        queryString:
+          'fields @timestamp, connectionId, roomId, action, message | filter connectionId like /^[A-Za-z0-9_-]+$/ | stats count() by action, roomId | sort @timestamp desc' as logs.QueryString,
         logGroups: props.lambdaFunctions.map((fn) =>
           logs.LogGroup.fromLogGroupName(
             this,
@@ -722,12 +722,8 @@ fields @timestamp, connectionId, roomId, action, message
     queries.push(
       new logs.QueryDefinition(this, 'SecurityEventsQuery', {
         queryDefinitionName: `commentia-security-events-${props.stage}`,
-        queryString: `
-fields @timestamp, level, message, requestId, userId, action
-| filter level in ["WARN", "ERROR"] and (message like /rate.limit/ or message like /validation/ or message like /security/)
-| sort @timestamp desc
-| limit 100
-      `,
+        queryString:
+          'fields @timestamp, level, message, requestId, userId, action | filter level in ["WARN", "ERROR"] and (message like /rate.limit/ or message like /validation/ or message like /security/) | sort @timestamp desc | limit 100' as logs.QueryString,
         logGroups: props.lambdaFunctions.map((fn) =>
           logs.LogGroup.fromLogGroupName(
             this,
