@@ -22,14 +22,14 @@
     "@aws-sdk/lib-dynamodb": "^3.665.0",
     "@commentia/shared": "*",
     "dompurify": "^3.1.7",
-    "jsdom": "^25.0.1",
+    "jsdom": "^27.0.1",
     "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "@types/aws-lambda": "^8.10.145",
     "@types/dompurify": "^3.0.5",
     "@types/jest": "^30.0.0",
-    "@types/jsdom": "^21.1.7",
+    "@types/jsdom": "^27.0.0",
     "@types/node": "^22.0.0",
     "@types/qrcode": "^1.5.5",
     "aws-sdk-client-mock": "^4.1.0",
