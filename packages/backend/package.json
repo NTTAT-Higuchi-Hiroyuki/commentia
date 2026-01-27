@@ -30,7 +30,7 @@
     "@types/dompurify": "^3.0.5",
     "@types/jest": "^30.0.0",
     "@types/jsdom": "^21.1.7",
-    "@types/node": "^22.0.0",
+    "@types/node": "^25.0.10",
     "@types/qrcode": "^1.5.5",
     "aws-sdk-client-mock": "^4.1.0",
     "esbuild": "^0.24.0",
